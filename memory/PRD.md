@@ -121,5 +121,8 @@ Sistema administrativo para una academia deportiva para gestionar la contrataci�
 
 ### Última Actualización
 **Fecha:** 12 de Enero, 2026
-**Versión:** 1.0.0
-**Último cambio:** Implementación completa del flujo de rechazo de cuentas de cobro
+**Versión:** 1.1.0
+**Últimos cambios:** 
+- Corregido bug de visualización de PDFs (autenticación)
+- Agregada exportación de reportes a Excel
+- SMTP habilitado por el usuario
