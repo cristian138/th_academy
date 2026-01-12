@@ -1083,6 +1083,200 @@ async def report_payments_pending(current_user: User = Depends(require_role(User
     
     return {"payments": [Payment(**p) for p in payments]}
 
+# ============= EXPORT REPORTS =============
+
+@app.get("/api/reports/export/contracts")
+async def export_contracts_excel(
+    status: Optional[str] = None,
+    current_user: User = Depends(require_role(UserRole.ADMIN))
+):
+    """Export contracts report to Excel"""
+    from fastapi.responses import StreamingResponse
+    import xlsxwriter
+    import io
+    
+    db = await get_database()
+    
+    query = {}
+    if status:
+        query["status"] = status
+    
+    contracts = await db.contracts.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Get collaborator names
+    collaborator_ids = list(set([c.get("collaborator_id") for c in contracts if c.get("collaborator_id")]))
+    collaborators = await db.users.find({"id": {"$in": collaborator_ids}}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
+    collab_map = {c["id"]: c["name"] for c in collaborators}
+    
+    # Create Excel file in memory
+    output = io.BytesIO()
+    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    worksheet = workbook.add_worksheet('Contratos')
+    
+    # Styles
+    header_format = workbook.add_format({'bold': True, 'bg_color': '#002d54', 'font_color': 'white', 'border': 1})
+    cell_format = workbook.add_format({'border': 1})
+    date_format = workbook.add_format({'border': 1, 'num_format': 'dd/mm/yyyy'})
+    money_format = workbook.add_format({'border': 1, 'num_format': '$#,##0'})
+    
+    # Headers
+    headers = ['ID', 'Título', 'Colaborador', 'Tipo', 'Estado', 'Fecha Inicio', 'Fecha Fin', 'Pago Mensual', 'Pago por Sesión', 'Creado']
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header, header_format)
+    
+    # Data
+    status_labels = {
+        'draft': 'Borrador', 'pending_documents': 'Pendiente Docs', 'under_review': 'En Revisión',
+        'pending_approval': 'Pendiente Aprobación', 'approved': 'Aprobado', 'pending_signature': 'Pendiente Firma',
+        'signed': 'Firmado', 'active': 'Activo', 'completed': 'Completado', 'cancelled': 'Cancelado'
+    }
+    type_labels = {'service': 'Prestación de Servicios', 'event': 'Por Evento'}
+    
+    for row, contract in enumerate(contracts, start=1):
+        worksheet.write(row, 0, contract.get("id", "")[:8], cell_format)
+        worksheet.write(row, 1, contract.get("title", ""), cell_format)
+        worksheet.write(row, 2, collab_map.get(contract.get("collaborator_id"), "N/A"), cell_format)
+        worksheet.write(row, 3, type_labels.get(contract.get("contract_type"), ""), cell_format)
+        worksheet.write(row, 4, status_labels.get(contract.get("status"), contract.get("status", "")), cell_format)
+        
+        start_date = contract.get("start_date")
+        if start_date:
+            worksheet.write_datetime(row, 5, start_date if hasattr(start_date, 'date') else datetime.fromisoformat(str(start_date).replace('Z', '+00:00')), date_format)
+        else:
+            worksheet.write(row, 5, "", cell_format)
+        
+        end_date = contract.get("end_date")
+        if end_date:
+            worksheet.write_datetime(row, 6, end_date if hasattr(end_date, 'date') else datetime.fromisoformat(str(end_date).replace('Z', '+00:00')), date_format)
+        else:
+            worksheet.write(row, 6, "", cell_format)
+        
+        worksheet.write(row, 7, contract.get("monthly_payment") or 0, money_format)
+        worksheet.write(row, 8, contract.get("payment_per_session") or 0, money_format)
+        
+        created_at = contract.get("created_at")
+        if created_at:
+            worksheet.write_datetime(row, 9, created_at if hasattr(created_at, 'date') else datetime.fromisoformat(str(created_at).replace('Z', '+00:00')), date_format)
+        else:
+            worksheet.write(row, 9, "", cell_format)
+    
+    # Adjust column widths
+    worksheet.set_column(0, 0, 10)
+    worksheet.set_column(1, 1, 30)
+    worksheet.set_column(2, 2, 25)
+    worksheet.set_column(3, 4, 20)
+    worksheet.set_column(5, 6, 12)
+    worksheet.set_column(7, 8, 15)
+    worksheet.set_column(9, 9, 12)
+    
+    workbook.close()
+    output.seek(0)
+    
+    filename = f"contratos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    return StreamingResponse(
+        output,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
+
+@app.get("/api/reports/export/payments")
+async def export_payments_excel(
+    status: Optional[str] = None,
+    current_user: User = Depends(require_role(UserRole.ACCOUNTANT))
+):
+    """Export payments report to Excel"""
+    from fastapi.responses import StreamingResponse
+    import xlsxwriter
+    import io
+    
+    db = await get_database()
+    
+    query = {}
+    if status:
+        query["status"] = status
+    
+    payments = await db.payments.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Get contract info
+    contract_ids = list(set([p.get("contract_id") for p in payments if p.get("contract_id")]))
+    contracts = await db.contracts.find({"id": {"$in": contract_ids}}, {"_id": 0, "id": 1, "title": 1, "collaborator_id": 1}).to_list(1000)
+    contract_map = {c["id"]: c for c in contracts}
+    
+    # Get collaborator names
+    collaborator_ids = list(set([c.get("collaborator_id") for c in contracts if c.get("collaborator_id")]))
+    collaborators = await db.users.find({"id": {"$in": collaborator_ids}}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
+    collab_map = {c["id"]: c["name"] for c in collaborators}
+    
+    # Create Excel file
+    output = io.BytesIO()
+    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    worksheet = workbook.add_worksheet('Pagos')
+    
+    # Styles
+    header_format = workbook.add_format({'bold': True, 'bg_color': '#002d54', 'font_color': 'white', 'border': 1})
+    cell_format = workbook.add_format({'border': 1})
+    date_format = workbook.add_format({'border': 1, 'num_format': 'dd/mm/yyyy'})
+    money_format = workbook.add_format({'border': 1, 'num_format': '$#,##0'})
+    
+    # Headers
+    headers = ['ID', 'Contrato', 'Colaborador', 'Monto', 'Estado', 'Descripción', 'Fecha Pago', 'Motivo Rechazo', 'Creado']
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header, header_format)
+    
+    # Data
+    status_labels = {
+        'draft': 'Borrador', 'pending_approval': 'Pendiente Aprobación', 
+        'approved': 'Aprobado', 'paid': 'Pagado', 'rejected': 'Rechazado', 'cancelled': 'Cancelado'
+    }
+    
+    for row, payment in enumerate(payments, start=1):
+        contract = contract_map.get(payment.get("contract_id"), {})
+        collaborator_name = collab_map.get(contract.get("collaborator_id"), "N/A")
+        
+        worksheet.write(row, 0, payment.get("id", "")[:8], cell_format)
+        worksheet.write(row, 1, contract.get("title", "N/A"), cell_format)
+        worksheet.write(row, 2, collaborator_name, cell_format)
+        worksheet.write(row, 3, payment.get("amount", 0), money_format)
+        worksheet.write(row, 4, status_labels.get(payment.get("status"), payment.get("status", "")), cell_format)
+        worksheet.write(row, 5, payment.get("description", ""), cell_format)
+        
+        payment_date = payment.get("payment_date")
+        if payment_date:
+            worksheet.write_datetime(row, 6, payment_date if hasattr(payment_date, 'date') else datetime.fromisoformat(str(payment_date).replace('Z', '+00:00')), date_format)
+        else:
+            worksheet.write(row, 6, "", cell_format)
+        
+        worksheet.write(row, 7, payment.get("rejection_reason", ""), cell_format)
+        
+        created_at = payment.get("created_at")
+        if created_at:
+            worksheet.write_datetime(row, 8, created_at if hasattr(created_at, 'date') else datetime.fromisoformat(str(created_at).replace('Z', '+00:00')), date_format)
+        else:
+            worksheet.write(row, 8, "", cell_format)
+    
+    # Adjust column widths
+    worksheet.set_column(0, 0, 10)
+    worksheet.set_column(1, 1, 30)
+    worksheet.set_column(2, 2, 25)
+    worksheet.set_column(3, 3, 15)
+    worksheet.set_column(4, 4, 20)
+    worksheet.set_column(5, 5, 30)
+    worksheet.set_column(6, 6, 12)
+    worksheet.set_column(7, 7, 30)
+    worksheet.set_column(8, 8, 12)
+    
+    workbook.close()
+    output.seek(0)
+    
+    filename = f"pagos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    return StreamingResponse(
+        output,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
+
 # ============= NOTIFICATIONS =============
 
 @app.get("/api/notifications", response_model=List[Notification])
