@@ -1,0 +1,146 @@
+{
+  "brand_identity": {
+    "name": "SportsAdmin Pro",
+    "archetype": "Swiss & High-Contrast",
+    "vibe": "Institutional, Athletic, Precision, Trustworthy",
+    "primary_color": "#002d54",
+    "accent_color": "#007AFF",
+    "description": "A high-precision administrative system that blends corporate reliability with athletic dynamism. Uses a strict Swiss grid system, high-contrast typography, and a 'Control Room' density for data."
+  },
+  "typography": {
+    "font_family_heading": "Chivo, sans-serif",
+    "font_family_body": "Manrope, sans-serif",
+    "import_url": "https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;700;900&family=Manrope:wght@400;500;600;700&display=swap",
+    "usage_rules": [
+      "HEADINGS (Chivo): Use for all page titles, card headers, and KPI values. Tracking tight (-0.02em).",
+      "BODY (Manrope): Use for all table data, form labels, and paragraphs. High legibility.",
+      "NUMBERS: Use tabular-nums for all data grids and financial figures."
+    ]
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "DEFAULT": "#002d54",
+        "foreground": "#ffffff"
+      },
+      "secondary": {
+        "DEFAULT": "#f1f5f9",
+        "foreground": "#002d54"
+      },
+      "accent": {
+        "DEFAULT": "#007AFF",
+        "foreground": "#ffffff"
+      },
+      "destructive": {
+        "DEFAULT": "#ef4444",
+        "foreground": "#ffffff"
+      },
+      "background": "#f8fafc",
+      "surface": "#ffffff",
+      "border": "#e2e8f0"
+    },
+    "tailwind_config": {
+      "colors": {
+        "brand": {
+          "navy": "#002d54",
+          "blue": "#007AFF",
+          "red": "#ef4444",
+          "gold": "#D4AF37",
+          "surface": "#ffffff",
+          "bg": "#f8fafc"
+        }
+      }
+    }
+  },
+  "layout": {
+    "grid_system": "The 'Control Room' Grid",
+    "dashboard_structure": "grid grid-cols-1 md:grid-cols-4 gap-6 p-6",
+    "spacing": {
+      "container_padding": "p-6 md:p-8",
+      "element_gap": "gap-4",
+      "section_gap": "gap-8"
+    },
+    "rules": [
+      "Sidebar: Fixed width (280px), dark navy background (#002d54), white text.",
+      "Header: Sticky, glassmorphism (bg-white/80 backdrop-blur-md), 1px bottom border.",
+      "Cards: No shadow by default. Use 1px border (border-slate-200). Hover state: border-brand-blue/50.",
+      "Forms: Max-width 2xl for readability. Labels uppercase and small (text-xs font-bold text-slate-500)."
+    ]
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#002d54] hover:bg-[#001f3f] text-white rounded-sm font-medium px-6 py-2.5 uppercase tracking-wide text-xs transition-all",
+      "secondary": "bg-white border border-slate-200 hover:bg-slate-50 text-slate-900 rounded-sm font-medium px-6 py-2.5 uppercase tracking-wide text-xs transition-all",
+      "destructive": "bg-red-600 hover:bg-red-700 text-white rounded-sm font-medium px-6 py-2.5 uppercase tracking-wide text-xs"
+    },
+    "cards": {
+      "base": "bg-white border border-slate-200 rounded-sm p-6 flex flex-col gap-4",
+      "interactive": "bg-white border border-slate-200 rounded-sm p-6 hover:border-brand-blue/50 transition-colors cursor-pointer"
+    },
+    "inputs": {
+      "base": "flex h-10 w-full rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#002d54] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    },
+    "status_badges": {
+      "success": "bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase",
+      "warning": "bg-amber-100 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase",
+      "error": "bg-red-100 text-red-700 border border-red-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase",
+      "neutral": "bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase"
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": "bg-white/80 backdrop-blur-md border-b border-slate-200/50",
+    "gradients": "None. Use solid colors and 1px borders for definition.",
+    "shadows": "Minimal. shadow-sm only for dropdowns and modals. Dashboard cards should be flat with borders.",
+    "textures": "Subtle noise texture on the sidebar background to give it a 'premium paper' feel."
+  },
+  "assets": {
+    "images": [
+      {
+        "category": "login_background",
+        "url": "https://images.unsplash.com/photo-1761449779811-33f7c48ed367?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Abstract blue ribbons, dynamic and professional. Use with a dark overlay (bg-navy/90) for the login screen."
+      },
+      {
+        "category": "dashboard_hero",
+        "url": "https://images.unsplash.com/photo-1762757076979-cc016f6df284?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Football coach on field. Use for 'Welcome' widget or profile placeholder."
+      },
+      {
+        "category": "meeting_context",
+        "url": "https://images.pexels.com/photos/3810792/pexels-photo-3810792.jpeg",
+        "description": "Modern office meeting. Use for 'Contracts' or 'HR' section headers."
+      }
+    ],
+    "icons": "Lucide React (default). Use stroke-width={1.5} for a thin, elegant look."
+  },
+  "instructions_to_main_agent": [
+    "1. INSTALL FONTS: Add the Google Fonts import to index.css immediately.",
+    "2. CONFIGURE TAILWIND: Update tailwind.config.js with the brand colors (#002d54, #007AFF).",
+    "3. LAYOUT: Build the 'DashboardLayout' component first. Sidebar (Left, Fixed, Dark) + Main Content (Right, Scrollable, Light Grey Bg).",
+    "4. COMPONENTS: Customize Shadcn components. Remove 'rounded-xl' and replace with 'rounded-sm'. Remove heavy shadows.",
+    "5. TABLES: This is a data-heavy app. Spend time on the Table component. Use 'tabular-nums', distinct headers (uppercase, small, bold), and zebra striping (even:bg-slate-50/50).",
+    "6. FORMS: Split long forms (Contract Creation) into Steps/Tabs. Do not dump 20 inputs on one page.",
+    "7. MICROSOFT: When referencing Outlook/OneDrive, use their official brand colors or a neutral 'Connect' button style.",
+    "8. DATA-TESTID: Add data-testid to all interactive elements (buttons, inputs, links) for testing."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur)",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN",
+    "Prioritize using pre-existing components from src/components/ui when applicable",
+    "Create new components that match the style and conventions of existing components when needed",
+    "Examine existing components to understand the project's component patterns before creating new ones",
+    "Components MUST use named exports (export const ComponentName = ...)",
+    "Pages MUST use default exports (export default function PageName() {...})",
+    "Use sonner for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx"
+  ]
+}
