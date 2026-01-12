@@ -43,9 +43,9 @@ export const LoginPage = () => {
         <div className="relative z-10 p-12 flex flex-col justify-center text-white">
           <div className="mb-8">
             <img 
-              src="https://images.unsplash.com/photo-1681913297857-0ce269a5810a?crop=entropy&cs=srgb&fm=jpg&q=85&w=120&h=120&fit=crop" 
+              src="https://customer-assets.emergentagent.com/job_coach-contracts/artifacts/mw84sg36_ICONO-NEGATIVO--SIN-FONDO.png" 
               alt="Jotuns Club Logo" 
-              className="w-20 h-20 rounded-full border-4 border-white/20 mb-4"
+              className="w-32 h-32 object-contain mb-4"
             />
           </div>
           <h1 className="text-5xl font-bold mb-4">Academia Jotuns Club SAS</h1>
