@@ -242,8 +242,8 @@ El sistema incluye datos iniciales para testing:
 - ✅ Microsoft Graph: Credenciales configuradas
 
 ### URL de Producción
-- **Frontend**: https://coach-contracts.preview.emergentagent.com
-- **API Backend**: https://coach-contracts.preview.emergentagent.com/api
+- **Frontend**: https://sport-staff-portal.preview.emergentagent.com
+- **API Backend**: https://sport-staff-portal.preview.emergentagent.com/api
 
 ## 📞 Credenciales de Acceso
 

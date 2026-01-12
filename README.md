@@ -106,7 +106,7 @@ JWT_SECRET="your-secret-key-change-in-production-min-32-chars-long-secret"
 
 **Frontend (.env):**
 ```env
-REACT_APP_BACKEND_URL=https://coach-contracts.preview.emergentagent.com
+REACT_APP_BACKEND_URL=https://sport-staff-portal.preview.emergentagent.com
 ```
 
 ### Microsoft Graph API - ¡YA CONFIGURADO!
