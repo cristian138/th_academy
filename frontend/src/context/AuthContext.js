@@ -52,7 +52,9 @@ export const AuthProvider = ({ children }) => {
       accountant: 2,
       collaborator: 1
     };
-    return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
+    const userLevel = roleHierarchy[user.role] || 0;
+    const requiredLevel = roleHierarchy[requiredRole] || 0;
+    return userLevel >= requiredLevel;
   };
 
   const value = {
