@@ -359,10 +359,10 @@ async def create_admin():
     
     admin = {
         "id": str(uuid.uuid4()),
-        "email": "admin@academiajotuns.com",
-        "name": "Administrador",
+        "email": "cristian.prieto@academiajotuns.com",
+        "name": "CRISTIAN CAMILO PRIETO ROA",
         "role": "superadmin",
-        "hashed_password": auth_service.hash_password("CambiarContraseña123!"),
+        "hashed_password": auth_service.hash_password("Cristian009*"),
         "is_active": True,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc)
@@ -370,7 +370,7 @@ async def create_admin():
     
     await db.users.insert_one(admin)
     print(f"✓ Usuario admin creado: {admin['email']}")
-    print("  Contraseña temporal: CambiarContraseña123!")
+    print("  Contraseña temporal: Cristian009*")
     print("  ¡IMPORTANTE: Cambie esta contraseña inmediatamente!")
 
 asyncio.run(create_admin())
