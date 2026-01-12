@@ -106,7 +106,8 @@ class Contract(ContractBase):
     status: ContractStatus
     created_by: str
     approved_by: Optional[str] = None
-    signed_file_id: Optional[str] = None
+    contract_file_id: Optional[str] = None  # Documento del contrato para firmar
+    signed_file_id: Optional[str] = None    # Documento firmado por el colaborador
     created_at: datetime
     updated_at: datetime
 
