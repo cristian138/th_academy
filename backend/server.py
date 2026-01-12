@@ -780,20 +780,67 @@ async def review_document(
         {"$set": update_data}
     )
     
-    # Get contract to notify collaborator
+    # Get contract and collaborator to notify
     contract = await db.contracts.find_one({"id": document["contract_id"]})
     if contract:
+        collaborator = await db.users.find_one({"id": contract["collaborator_id"]})
+        doc_label = DOCUMENT_LABELS.get(document['document_type'], document['document_type'])
+        new_status = update_data.get('status', 'revisado')
+        
+        # Create notification
+        if new_status == 'approved':
+            notification_msg = f"Su documento '{doc_label}' ha sido APROBADO."
+        elif new_status == 'rejected':
+            review_notes = update_data.get('review_notes', 'Sin observaciones')
+            notification_msg = f"Su documento '{doc_label}' ha sido RECHAZADO. Observación: {review_notes}. Por favor corrija y vuelva a cargar el documento."
+        else:
+            notification_msg = f"Su documento '{doc_label}' ha sido revisado."
+        
         await db.notifications.insert_one({
             "user_id": contract["collaborator_id"],
             "title": "Documento Revisado",
-            "message": f"Su documento {DOCUMENT_LABELS.get(document['document_type'], document['document_type'])} ha sido {update_data.get('status', 'revisado')}",
+            "message": notification_msg,
             "notification_type": "document_reviewed",
             "read": False,
             "created_at": datetime.now(timezone.utc)
         })
         
+        # Send email to collaborator
+        if collaborator and collaborator.get("email"):
+            if new_status == 'approved':
+                email_body = f"""
+                <h2>Documento Aprobado</h2>
+                <p>Estimado(a) {collaborator.get('name', 'Colaborador')},</p>
+                <p>Le informamos que su documento <strong>{doc_label}</strong> del contrato <strong>{contract['title']}</strong> ha sido <span style="color: green; font-weight: bold;">APROBADO</span>.</p>
+                <p>Saludos cordiales,<br>Sistema de Talento Humano</p>
+                """
+            elif new_status == 'rejected':
+                review_notes = update_data.get('review_notes', 'Sin observaciones específicas')
+                email_body = f"""
+                <h2>Documento Rechazado - Acción Requerida</h2>
+                <p>Estimado(a) {collaborator.get('name', 'Colaborador')},</p>
+                <p>Le informamos que su documento <strong>{doc_label}</strong> del contrato <strong>{contract['title']}</strong> ha sido <span style="color: red; font-weight: bold;">RECHAZADO</span>.</p>
+                <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <strong>Observación:</strong><br>
+                    {review_notes}
+                </div>
+                <p>Por favor ingrese al sistema, corrija el documento según las observaciones indicadas y vuelva a cargarlo.</p>
+                <p>Saludos cordiales,<br>Sistema de Talento Humano</p>
+                """
+            else:
+                email_body = f"""
+                <h2>Documento Revisado</h2>
+                <p>Su documento {doc_label} ha sido revisado.</p>
+                """
+            
+            await email_service.send_email(
+                recipient_email=collaborator["email"],
+                subject=f"Documento {new_status.upper()} - {doc_label}",
+                body=email_body
+            )
+        
         # Check if all required documents are now approved
-        if update_data.get("status") == "approved":
+        if new_status == "approved":
             docs = await db.documents.find({"contract_id": contract["id"]}, {"_id": 0}).to_list(100)
             required_types = {dt.value for dt in REQUIRED_DOCUMENTS}
             approved_required = sum(1 for doc in docs if doc["document_type"] in required_types and doc["status"] == "approved")
@@ -805,13 +852,26 @@ async def review_document(
                         {"id": contract["id"]},
                         {"$set": {"status": ContractStatus.PENDING_APPROVAL, "updated_at": datetime.now(timezone.utc)}}
                     )
+                    
+                    # Notify collaborator that all docs are approved
+                    await email_service.send_email(
+                        recipient_email=collaborator["email"],
+                        subject=f"Documentos Completos - Contrato {contract['title']}",
+                        body=f"""
+                        <h2>Todos sus Documentos han sido Aprobados</h2>
+                        <p>Estimado(a) {collaborator.get('name', 'Colaborador')},</p>
+                        <p>Le informamos que <strong>todos sus documentos obligatorios</strong> para el contrato <strong>{contract['title']}</strong> han sido aprobados.</p>
+                        <p>Su contrato ahora está pendiente de aprobación final por parte del Representante Legal.</p>
+                        <p>Saludos cordiales,<br>Sistema de Talento Humano</p>
+                        """
+                    )
     
     await audit_service.log(
         user_id=current_user.id,
         action="review_document",
         resource_type="document",
         resource_id=document_id,
-        details={"status": update_data.get("status")}
+        details={"status": update_data.get("status"), "review_notes": update_data.get("review_notes")}
     )
     
     updated_doc = await db.documents.find_one({"id": document_id}, {"_id": 0})
