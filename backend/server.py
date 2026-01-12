@@ -76,6 +76,19 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     return User(**user_data)
 
+# Helper to get user from query token (for downloads/exports)
+async def get_user_from_token(token: str) -> User:
+    payload = auth_service.decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+    db = await get_database()
+    user_data = await db.users.find_one({"id": payload["sub"]})
+    if not user_data or not user_data.get("is_active"):
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+    
+    return User(**user_data)
+
 # Dependency to check role
 def require_role(required_role: UserRole):
     async def role_checker(current_user: User = Depends(get_current_user)):
