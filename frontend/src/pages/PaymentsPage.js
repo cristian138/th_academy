@@ -24,16 +24,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { DollarSign, Upload, CheckCircle2, Clock, Plus } from 'lucide-react';
+import { DollarSign, Upload, CheckCircle2, Clock, Plus, FileText, AlertCircle } from 'lucide-react';
 
 const getStatusBadge = (status) => {
   const statusMap = {
-    pending_bill: { label: 'Esperando Cuenta de Cobro', class: 'bg-amber-100 text-amber-700 border-amber-200' },
-    pending_payment: { label: 'Pendiente de Pago', class: 'bg-blue-100 text-blue-700 border-blue-200' },
+    draft: { label: 'Borrador', class: 'bg-slate-100 text-slate-700 border-slate-200' },
+    pending_approval: { label: 'Pendiente Aprobación', class: 'bg-amber-100 text-amber-700 border-amber-200' },
+    approved: { label: 'Aprobado', class: 'bg-blue-100 text-blue-700 border-blue-200' },
     paid: { label: 'Pagado', class: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+    rejected: { label: 'Rechazado', class: 'bg-red-100 text-red-700 border-red-200' },
     cancelled: { label: 'Cancelado', class: 'bg-red-100 text-red-700 border-red-200' }
   };
-  const statusInfo = statusMap[status] || statusMap.pending_bill;
+  const statusInfo = statusMap[status] || statusMap.draft;
   return (
     <Badge className={`${statusInfo.class} px-2.5 py-0.5 rounded-full text-xs font-bold uppercase border`}>
       {statusInfo.label}
@@ -49,8 +51,10 @@ export const PaymentsPage = () => {
   const [uploadingBill, setUploadingBill] = useState(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [approvingPayment, setApprovingPayment] = useState(null);
+  const [confirmingPayment, setConfirmingPayment] = useState(null);
   
-  // Form state for creating payment
+  // Form state for creating payment (cuenta de cobro)
   const [formData, setFormData] = useState({
     contract_id: '',
     amount: '',
@@ -60,7 +64,7 @@ export const PaymentsPage = () => {
 
   useEffect(() => {
     loadPayments();
-    if (hasRole('accountant')) {
+    if (user.role === 'collaborator') {
       loadContracts();
     }
   }, []);
@@ -100,7 +104,7 @@ export const PaymentsPage = () => {
       };
 
       await paymentsAPI.create(paymentData);
-      toast.success('Pago creado exitosamente');
+      toast.success('Cuenta de cobro creada exitosamente');
       setShowCreateDialog(false);
       setFormData({
         contract_id: '',
@@ -110,7 +114,7 @@ export const PaymentsPage = () => {
       });
       loadPayments();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error al crear pago');
+      toast.error(error.response?.data?.detail || 'Error al crear cuenta de cobro');
     } finally {
       setCreating(false);
     }
@@ -120,12 +124,38 @@ export const PaymentsPage = () => {
     setUploadingBill(paymentId);
     try {
       await paymentsAPI.uploadBill(paymentId, file);
-      toast.success('Cuenta de cobro cargada exitosamente');
+      toast.success('Cuenta de cobro cargada exitosamente - enviada para aprobación');
       loadPayments();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error al cargar cuenta de cobro');
     } finally {
       setUploadingBill(null);
+    }
+  };
+
+  const handleApprovePayment = async (paymentId) => {
+    setApprovingPayment(paymentId);
+    try {
+      await paymentsAPI.approve(paymentId);
+      toast.success('Cuenta de cobro aprobada exitosamente');
+      loadPayments();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al aprobar cuenta de cobro');
+    } finally {
+      setApprovingPayment(null);
+    }
+  };
+
+  const handleConfirmPayment = async (paymentId, file) => {
+    setConfirmingPayment(paymentId);
+    try {
+      await paymentsAPI.confirm(paymentId, file);
+      toast.success('Pago confirmado y comprobante generado');
+      loadPayments();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al confirmar pago');
+    } finally {
+      setConfirmingPayment(null);
     }
   };
 
@@ -144,11 +174,15 @@ export const PaymentsPage = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-brand-navy mb-2">Pagos</h1>
-            <p className="text-slate-600">Gestione los pagos y comprobantes</p>
+            <h1 className="text-4xl font-bold text-brand-navy mb-2">Cuentas de Cobro y Pagos</h1>
+            <p className="text-slate-600">
+              {user.role === 'collaborator' 
+                ? 'Cree y gestione sus cuentas de cobro' 
+                : 'Apruebe cuentas de cobro y genere comprobantes de pago'}
+            </p>
           </div>
           
-          {hasRole('accountant') && (
+          {user.role === 'collaborator' && (
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
                 <Button
@@ -156,14 +190,14 @@ export const PaymentsPage = () => {
                   className="bg-brand-navy hover:bg-brand-navy/90 text-white rounded-sm font-medium px-6 py-2.5 uppercase tracking-wide text-xs"
                 >
                   <Plus size={18} className="mr-2" />
-                  Registrar Pago
+                  Nueva Cuenta de Cobro
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                  <DialogTitle className="text-brand-navy">Registrar Nuevo Pago</DialogTitle>
+                  <DialogTitle className="text-brand-navy">Nueva Cuenta de Cobro</DialogTitle>
                   <DialogDescription>
-                    Registre un pago para un contrato activo. El colaborador será notificado para cargar su cuenta de cobro.
+                    Cree una cuenta de cobro para uno de sus contratos activos.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -199,7 +233,7 @@ export const PaymentsPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs uppercase text-slate-500 font-bold">Fecha de Pago</Label>
+                    <Label className="text-xs uppercase text-slate-500 font-bold">Fecha</Label>
                     <Input
                       type="date"
                       value={formData.payment_date}
@@ -235,7 +269,7 @@ export const PaymentsPage = () => {
                     data-testid="submit-payment-button"
                     className="flex-1 bg-brand-navy hover:bg-brand-navy/90 text-white rounded-sm"
                   >
-                    {creating ? 'Creando...' : 'Registrar Pago'}
+                    {creating ? 'Creando...' : 'Crear'}
                   </Button>
                 </div>
               </DialogContent>
@@ -247,13 +281,13 @@ export const PaymentsPage = () => {
           <Card className="border border-slate-200 rounded-sm">
             <CardContent className="py-12 text-center">
               <DollarSign size={48} className="mx-auto mb-4 text-slate-300" />
-              <p className="text-slate-500">No hay pagos registrados</p>
-              {hasRole('accountant') && (
+              <p className="text-slate-500">No hay cuentas de cobro registradas</p>
+              {user.role === 'collaborator' && (
                 <Button
                   onClick={() => setShowCreateDialog(true)}
                   className="mt-4 bg-brand-navy hover:bg-brand-navy/90 text-white rounded-sm"
                 >
-                  Registrar Primer Pago
+                  Crear Primera Cuenta de Cobro
                 </Button>
               )}
             </CardContent>
@@ -270,7 +304,7 @@ export const PaymentsPage = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="text-lg font-bold text-brand-navy mb-2">
-                        Pago - ${payment.amount.toLocaleString('es-CO')}
+                        ${payment.amount.toLocaleString('es-CO')}
                       </CardTitle>
                       {payment.description && (
                         <p className="text-sm text-slate-600">{payment.description}</p>
@@ -282,7 +316,7 @@ export const PaymentsPage = () => {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
-                      <p className="text-xs uppercase text-slate-500 font-bold mb-1">Fecha de Pago</p>
+                      <p className="text-xs uppercase text-slate-500 font-bold mb-1">Fecha</p>
                       <p className="text-sm text-brand-navy">
                         {new Date(payment.payment_date).toLocaleDateString('es-CO')}
                       </p>
@@ -299,10 +333,12 @@ export const PaymentsPage = () => {
                     </div>
                   </div>
 
-                  {payment.status === 'pending_bill' && user.role === 'collaborator' && (
+                  {/* Colaborador - Cargar cuenta de cobro (status: draft) */}
+                  {payment.status === 'draft' && user.role === 'collaborator' && (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm">
-                      <p className="text-sm font-medium text-amber-900 mb-3">
-                        Por favor cargue su cuenta de cobro para procesar el pago
+                      <p className="text-sm font-medium text-amber-900 mb-3 flex items-center gap-2">
+                        <AlertCircle size={18} />
+                        Por favor cargue su cuenta de cobro en PDF
                       </p>
                       <Input
                         type="file"
@@ -320,17 +356,66 @@ export const PaymentsPage = () => {
                     </div>
                   )}
 
-                  {payment.status === 'pending_payment' && (
+                  {/* Pendiente aprobación */}
+                  {payment.status === 'pending_approval' && (
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock size={18} className="text-blue-700" />
+                          <p className="text-sm font-medium text-blue-900">
+                            Cuenta de cobro en revisión
+                          </p>
+                        </div>
+                        {hasRole('accountant') && (
+                          <Button
+                            onClick={() => handleApprovePayment(payment.id)}
+                            disabled={approvingPayment === payment.id}
+                            size="sm"
+                            data-testid={`approve-payment-${payment.id}`}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm"
+                          >
+                            {approvingPayment === payment.id ? 'Aprobando...' : 'Aprobar'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Aprobado - Contador genera comprobante */}
+                  {payment.status === 'approved' && hasRole('accountant') && (
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-sm">
+                      <p className="text-sm font-medium text-emerald-900 mb-3">
+                        Cuenta de cobro aprobada. Genere el comprobante de pago:
+                      </p>
+                      <Input
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            handleConfirmPayment(payment.id, file);
+                          }
+                        }}
+                        disabled={confirmingPayment === payment.id}
+                        data-testid={`confirm-payment-${payment.id}`}
+                        className="rounded-sm"
+                      />
+                    </div>
+                  )}
+
+                  {/* Aprobado - Vista colaborador */}
+                  {payment.status === 'approved' && user.role === 'collaborator' && (
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-sm">
                       <div className="flex items-center gap-2">
-                        <Clock size={18} className="text-blue-700" />
-                        <p className="text-sm font-medium text-blue-900">
-                          Cuenta de cobro recibida. Pago en proceso.
+                        <CheckCircle2 size={18} className="text-emerald-700" />
+                        <p className="text-sm font-medium text-emerald-900">
+                          Cuenta de cobro aprobada. Pago en proceso.
                         </p>
                       </div>
                     </div>
                   )}
 
+                  {/* Pagado */}
                   {payment.status === 'paid' && (
                     <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-sm">
                       <div className="flex items-center justify-between">
@@ -345,6 +430,7 @@ export const PaymentsPage = () => {
                             className="rounded-sm text-xs"
                             data-testid={`download-voucher-${payment.id}`}
                           >
+                            <FileText size={14} className="mr-1" />
                             Descargar Comprobante
                           </Button>
                         )}
