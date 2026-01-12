@@ -309,23 +309,42 @@ async def create_user(
     
     # Send welcome email (non-blocking)
     try:
-        await email_service.send_email(
+        email_sent = await email_service.send_email(
             recipient_email=user_create.email,
-            subject="Bienvenido al Sistema de Talento Humano - Jotuns Club",
+            subject="Bienvenido al Sistema de Talento Humano - Academia Jotuns Club",
             body=f"""
-            <h2>Bienvenido(a) {user_create.name}</h2>
-            <p>Se ha creado su cuenta en el Sistema de Talento Humano de la Academia Jotuns Club.</p>
-            <p><strong>Sus credenciales de acceso:</strong></p>
-            <ul>
-                <li>Correo: {user_create.email}</li>
-                <li>Contraseña: {user_create.password}</li>
-            </ul>
-            <p>Por favor cambie su contraseña después del primer inicio de sesión.</p>
-            <p>Saludos cordiales,<br>Sistema de Talento Humano</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background-color: #002d54; padding: 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">Sistema de Talento Humano</h1>
+                    <p style="color: #ccc; margin: 5px 0 0 0;">Academia Jotuns Club SAS</p>
+                </div>
+                <div style="padding: 30px; background-color: #f9f9f9;">
+                    <h2 style="color: #002d54;">¡Bienvenido(a) {user_create.name}!</h2>
+                    <p>Se ha creado su cuenta en el Sistema de Talento Humano.</p>
+                    
+                    <div style="background-color: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; margin: 20px 0;">
+                        <h3 style="color: #002d54; margin-top: 0;">Sus credenciales de acceso:</h3>
+                        <p><strong>URL:</strong> <a href="https://th.academiajotuns.com">https://th.academiajotuns.com</a></p>
+                        <p><strong>Correo:</strong> {user_create.email}</p>
+                        <p><strong>Contraseña:</strong> {user_create.password}</p>
+                    </div>
+                    
+                    <p style="color: #e74c3c;"><strong>⚠️ Importante:</strong> Por seguridad, cambie su contraseña después del primer inicio de sesión.</p>
+                    
+                    <p style="color: #666;">Saludos cordiales,<br><strong>Sistema de Talento Humano</strong></p>
+                </div>
+                <div style="background-color: #002d54; padding: 10px; text-align: center;">
+                    <p style="color: #888; font-size: 12px; margin: 0;">Academia Jotuns Club SAS - Todos los derechos reservados</p>
+                </div>
+            </div>
             """
         )
+        if email_sent:
+            print(f"✓ Welcome email sent to {user_create.email}")
+        else:
+            print(f"⚠ Welcome email NOT sent to {user_create.email}")
     except Exception as e:
-        print(f"Error sending welcome email: {e}")
+        print(f"✗ Error sending welcome email to {user_create.email}: {e}")
     
     await audit_service.log(
         user_id=current_user.id,
