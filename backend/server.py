@@ -1100,13 +1100,18 @@ async def report_payments_pending(current_user: User = Depends(require_role(User
 
 @app.get("/api/reports/export/contracts")
 async def export_contracts_excel(
-    status: Optional[str] = None,
-    current_user: User = Depends(require_role(UserRole.ADMIN))
+    token: str,
+    status: Optional[str] = None
 ):
     """Export contracts report to Excel"""
     from fastapi.responses import StreamingResponse
     import xlsxwriter
     import io
+    
+    # Verify token and role
+    current_user = await get_user_from_token(token)
+    if not auth_service.has_permission(current_user.role, UserRole.ADMIN):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     db = await get_database()
     
