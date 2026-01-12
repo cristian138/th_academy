@@ -44,9 +44,11 @@ class DocumentStatus(str, Enum):
     EXPIRED = "expired"
 
 class PaymentStatus(str, Enum):
-    PENDING_BILL = "pending_bill"  # Esperando cuenta de cobro
-    PENDING_PAYMENT = "pending_payment"  # Cuenta de cobro cargada
-    PAID = "paid"  # Pagado
+    DRAFT = "draft"  # Colaborador está creando la cuenta de cobro
+    PENDING_APPROVAL = "pending_approval"  # Cuenta de cobro cargada, esperando aprobación
+    APPROVED = "approved"  # Aprobado por contador
+    PAID = "paid"  # Pagado con comprobante
+    REJECTED = "rejected"  # Rechazado
     CANCELLED = "cancelled"
 
 # User Models
