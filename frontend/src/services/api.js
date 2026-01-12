@@ -56,13 +56,23 @@ export const contractsAPI = {
   create: (data) => api.post('/contracts', data),
   update: (id, data) => api.put(`/contracts/${id}`, data),
   review: (id) => api.post(`/contracts/${id}/review`),
-  approve: (id) => api.post(`/contracts/${id}/approve`),
+  approve: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/contracts/${id}/approve`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
   uploadSigned: (id, file) => {
     const formData = new FormData();
     formData.append('file', file);
     return api.post(`/contracts/${id}/upload-signed`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
+  },
+  downloadFile: (fileId) => {
+    const token = localStorage.getItem('token');
+    return `${process.env.REACT_APP_BACKEND_URL}/api/files/view/${fileId}?token=${token}`;
   }
 };
 
