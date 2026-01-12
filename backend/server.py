@@ -1021,7 +1021,7 @@ async def report_payments_pending(current_user: User = Depends(require_role(User
     db = await get_database()
     
     payments = await db.payments.find({
-        "status": {"$in": [PaymentStatus.PENDING_BILL, PaymentStatus.PENDING_PAYMENT]}
+        "status": {"$in": [PaymentStatus.DRAFT, PaymentStatus.PENDING_APPROVAL, PaymentStatus.APPROVED]}
     }, {"_id": 0}).to_list(1000)
     
     return {"payments": [Payment(**p) for p in payments]}
