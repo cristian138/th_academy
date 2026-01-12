@@ -256,14 +256,16 @@ export const CollaboratorsPage = () => {
                       <Pencil size={14} className="mr-1" />
                       Editar
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openDeleteDialog(collaborator)}
-                      className="rounded-sm text-xs text-red-600 border-red-200 hover:bg-red-50"
-                    >
-                      <Trash2 size={14} />
-                    </Button>
+                    {isSuperAdmin && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openDeleteDialog(collaborator)}
+                        className="rounded-sm text-xs text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
