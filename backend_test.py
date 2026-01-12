@@ -146,7 +146,7 @@ class SportsAdminAPITester:
         if not self.test_login("admin"):
             return False
         
-        success, contracts, _ = self.test_list_contracts()
+        success, contracts = self.test_list_contracts()
         if not success:
             return False
         
