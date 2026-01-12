@@ -172,69 +172,75 @@ class SportsAdminAPITester:
         """Test payment creation workflow"""
         print("\n💰 Testing Payment Workflow...")
         
-        # First login as contador (accountant)
-        if not self.test_login("contador"):
-            print("❌ Cannot login as contador - skipping payment tests")
+        # First login as collaborator (carlos.rodriguez@coach.com)
+        if not self.test_login("collaborator"):
+            print("❌ Cannot login as collaborator - skipping payment tests")
             return False
         
-        # Get active contracts
+        # Get contracts for this collaborator
         success, contracts = self.test_list_contracts()
         if not success:
             print("❌ Cannot get contracts - skipping payment tests")
             return False
         
-        # Find an active contract
+        # Find an active contract for this collaborator
         active_contract = None
         for contract in contracts:
-            if contract.get('status') == 'active':
+            if contract.get('status') in ['active', 'approved']:
                 active_contract = contract
                 break
         
         if not active_contract:
-            print("⚠️  No active contracts found - cannot test payment creation")
+            print("⚠️  No active contracts found for collaborator - cannot test payment creation")
             return True  # Not a failure, just no data to test with
         
-        print(f"📋 Using active contract: {active_contract.get('title', 'N/A')}")
+        print(f"📋 Using contract: {active_contract.get('title', 'N/A')} (ID: {active_contract.get('id', 'N/A')})")
         
-        # Test create payment
+        # Test create payment as collaborator
         payment_success, payment_data = self.test_create_payment(active_contract['id'])
         
         if payment_success:
+            payment_id = payment_data.get('id')
+            print(f"✅ Created payment with ID: {payment_id}")
+            
             # Test list payments to verify it appears
             list_success, payments = self.test_list_payments()
             if list_success:
                 # Check if our payment is in the list
                 created_payment = None
                 for payment in payments:
-                    if payment.get('id') == payment_data.get('id'):
+                    if payment.get('id') == payment_id:
                         created_payment = payment
                         break
                 
                 if created_payment:
-                    self.log_test("Payment in List", True, f"Amount: ${created_payment.get('amount', 0)}")
+                    self.log_test("Payment in List", True, f"Amount: ${created_payment.get('amount', 0)}, Status: {created_payment.get('status', 'N/A')}")
                 else:
                     self.log_test("Payment in List", False, "Created payment not found in list")
-        
-        # Test as collaborator - should NOT be able to create payments
-        if self.test_login("collaborator"):
-            print("\n👨‍💼 Testing Payment Access as Collaborator...")
             
-            # Try to create payment (should fail)
-            payment_data = {
-                "contract_id": active_contract['id'],
-                "amount": 1000000,
-                "payment_date": datetime.now().strftime("%Y-%m-%d"),
-                "description": "Should fail"
-            }
-            
-            success, data, status = self.make_request('POST', '/payments', payment_data)
-            # Should fail with 403 Forbidden
-            expected_fail = not success and status == 403
-            self.log_test("Collaborator Create Payment (Should Fail)", expected_fail, f"Status: {status}")
-            
-            # But should be able to list payments
-            list_success, payments = self.test_list_payments()
-            self.log_test("Collaborator List Payments", list_success, f"Found {len(payments) if isinstance(payments, list) else 0} payments")
+            # Now test as accountant (contador) - should be able to approve
+            if self.test_login("contador"):
+                print("\n💼 Testing Payment Approval as Contador...")
+                
+                # List payments as contador
+                list_success, payments = self.test_list_payments()
+                self.log_test("Contador List Payments", list_success, f"Found {len(payments) if isinstance(payments, list) else 0} payments")
+                
+                # Find payments with status "pending_approval"
+                pending_payments = [p for p in payments if p.get('status') == 'pending_approval']
+                if pending_payments:
+                    print(f"📋 Found {len(pending_payments)} payments pending approval")
+                    # Test approve first pending payment
+                    approve_success, approve_data = self.test_approve_payment(pending_payments[0]['id'])
+                else:
+                    print("⚠️  No payments with 'pending_approval' status found")
+                
+                # Find payments with status "approved" 
+                approved_payments = [p for p in payments if p.get('status') == 'approved']
+                if approved_payments:
+                    print(f"📋 Found {len(approved_payments)} approved payments (ready for comprobante)")
+                else:
+                    print("⚠️  No payments with 'approved' status found")
         
         return payment_success
 
