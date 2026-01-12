@@ -492,6 +492,52 @@ export const PaymentsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Dialog para rechazar cuenta de cobro */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-brand-navy">Rechazar Cuenta de Cobro</DialogTitle>
+            <DialogDescription>
+              Por favor indique el motivo del rechazo. El colaborador será notificado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-xs uppercase text-slate-500 font-bold">Motivo del Rechazo</Label>
+              <Textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Ej: La cuenta de cobro no incluye el IVA, por favor corregir..."
+                data-testid="rejection-reason-input"
+                className="rounded-sm"
+                rows={4}
+              />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRejectDialog(false);
+                setRejectionReason('');
+                setRejectingPayment(null);
+              }}
+              className="flex-1 rounded-sm"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleRejectPayment}
+              disabled={!rejectionReason.trim()}
+              data-testid="confirm-reject-button"
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-sm"
+            >
+              Rechazar Cuenta
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
