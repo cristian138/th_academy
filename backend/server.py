@@ -862,12 +862,15 @@ async def confirm_payment(
     file: UploadFile = File(...),
     current_user: User = Depends(require_role(UserRole.ACCOUNTANT))
 ):
-    """Confirm payment with voucher"""
+    """Confirm payment with voucher (comprobante de pago)"""
     db = await get_database()
     
     payment = await db.payments.find_one({"id": payment_id})
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
+    
+    if payment["status"] != PaymentStatus.APPROVED:
+        raise HTTPException(status_code=400, detail="Payment must be approved first")
     
     # Upload voucher to OneDrive
     file_content = await file.read()
@@ -886,6 +889,7 @@ async def confirm_payment(
         {"$set": {
             "status": PaymentStatus.PAID,
             "voucher_file_id": result["id"],
+            "confirmed_by": current_user.id,
             "updated_at": datetime.now(timezone.utc)
         }}
     )
@@ -906,7 +910,7 @@ async def confirm_payment(
     # Send email
     await email_service.send_email(
         recipient_email=collaborator["email"],
-        subject="Pago Procesado - SportsAdmin",
+        subject="Pago Procesado - Jotuns Club",
         body=f"<h2>Pago Procesado</h2><p>El pago de <strong>${payment['amount']}</strong> ha sido procesado exitosamente.</p><p>Puede descargar su comprobante en el sistema.</p>"
     )
     
