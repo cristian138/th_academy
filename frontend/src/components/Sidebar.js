@@ -36,9 +36,9 @@ export const Sidebar = () => {
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center gap-3 mb-2">
           <img 
-            src="https://images.unsplash.com/photo-1681913297857-0ce269a5810a?crop=entropy&cs=srgb&fm=jpg&q=85&w=80&h=80&fit=crop" 
+            src="https://customer-assets.emergentagent.com/job_coach-contracts/artifacts/mw84sg36_ICONO-NEGATIVO--SIN-FONDO.png" 
             alt="Jotuns Club Logo" 
-            className="w-12 h-12 rounded-full object-cover border-2 border-brand-blue"
+            className="w-14 h-14 object-contain"
           />
           <div>
             <h1 className="text-lg font-bold tracking-tight">Jotuns Club SAS</h1>
