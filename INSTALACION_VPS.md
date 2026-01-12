@@ -197,7 +197,7 @@ Contenido:
 ```ini
 [program:jotuns-backend]
 directory=/var/www/jotuns-th/backend
-command=/var/www/jotuns-th/backend/venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001
+command=/var/www/jotuns-th/backend/venv/bin/uvicorn server:app --host 0.0.0.0 --port 8002
 user=www-data
 autostart=true
 autorestart=true
@@ -218,7 +218,7 @@ sudo supervisorctl start jotuns-backend
 
 ```bash
 sudo supervisorctl status jotuns-backend
-curl http://localhost:8001/api/health
+curl http://localhost:8002/api/health
 ```
 
 ---
@@ -243,7 +243,7 @@ server {
     client_max_body_size 50M;
 
     location /api {
-        proxy_pass http://127.0.0.1:8001;
+        proxy_pass http://127.0.0.1:8002;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -306,7 +306,7 @@ server {
 
     # API Backend
     location /api {
-        proxy_pass http://127.0.0.1:8001;
+        proxy_pass http://127.0.0.1:8002;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -485,7 +485,7 @@ sudo systemctl status mongod
 
 ### Error 502 Bad Gateway
 ```bash
-curl http://localhost:8001/api/health
+curl http://localhost:8002/api/health
 sudo supervisorctl restart jotuns-backend
 ```
 
