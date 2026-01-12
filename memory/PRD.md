@@ -49,10 +49,15 @@ Sistema administrativo para una academia deportiva para gestionar la contrataci�
 
 #### ✅ Flujo de Pagos (Cuentas de Cobro)
 - **Colaborador:** Crear cuenta de cobro, subir PDF
-- **Contador:** Ver, aprobar o rechazar cuentas de cobro
+- **Contador:** Ver PDF, aprobar o rechazar cuentas de cobro
 - **Rechazo:** Motivo del rechazo visible para colaborador
 - **Reenvío:** Colaborador puede corregir y resubir cuenta rechazada
 - **Comprobante:** Contador genera comprobante de pago
+
+#### ✅ Reportes y Exportación
+- Reportes de contratos pendientes, activos
+- Reportes de pagos pendientes
+- **Exportación a Excel:** Contratos y Pagos con formato profesional
 
 #### ✅ Dashboard
 - Estadísticas por rol
