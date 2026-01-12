@@ -46,14 +46,6 @@ export const ContractDetailPage = () => {
       setContract(response.data);
     } catch (error) {
       console.error('Error loading contract:', error);
-    }
-  };
-
-  useEffect(() => {
-    loadContract();
-  }, [id]);
-    } catch (error) {
-      console.error('Error loading contract:', error);
       toast.error('Error al cargar el contrato');
     } finally {
       setLoading(false);
