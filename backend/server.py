@@ -1062,3 +1062,18 @@ async def mark_notification_read(
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "SportsAdmin API"}
+
+@app.get("/api/files/download/{file_id}")
+async def download_file(file_id: str, current_user: User = Depends(get_current_user)):
+    """Download file from storage"""
+    from fastapi.responses import FileResponse
+    
+    file_path = await storage_service.get_file_path(file_id)
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(
+        path=file_path,
+        filename=os.path.basename(file_path),
+        media_type='application/octet-stream'
+    )
