@@ -121,7 +121,19 @@ export const dashboardAPI = {
 export const reportsAPI = {
   contractsPending: () => api.get('/reports/contracts-pending'),
   contractsActive: () => api.get('/reports/contracts-active'),
-  paymentsPending: () => api.get('/reports/payments-pending')
+  paymentsPending: () => api.get('/reports/payments-pending'),
+  exportContracts: (status) => {
+    const token = localStorage.getItem('token');
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/reports/export/contracts?${params.toString()}`, '_blank');
+  },
+  exportPayments: (status) => {
+    const token = localStorage.getItem('token');
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/reports/export/payments?${params.toString()}`, '_blank');
+  }
 };
 
 // Notifications
