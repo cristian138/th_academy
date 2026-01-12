@@ -7,7 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, CheckCircle2, Upload, FileText } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ArrowLeft, CheckCircle2, Upload, FileText, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getStatusBadge = (status) => {
@@ -38,7 +47,11 @@ export const ContractDetailPage = () => {
   const [contract, setContract] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [file, setFile] = useState(null);
+  const [signedFile, setSignedFile] = useState(null);
+  
+  // State for approve dialog
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [approveFile, setApproveFile] = useState(null);
 
   const loadContract = async () => {
     try {
@@ -70,10 +83,17 @@ export const ContractDetailPage = () => {
   };
 
   const handleApprove = async () => {
+    if (!approveFile) {
+      toast.error('Por favor seleccione el documento del contrato');
+      return;
+    }
+
     setActionLoading(true);
     try {
-      await contractsAPI.approve(id);
-      toast.success('Contrato aprobado exitosamente');
+      await contractsAPI.approve(id, approveFile);
+      toast.success('Contrato aprobado y documento cargado exitosamente');
+      setShowApproveDialog(false);
+      setApproveFile(null);
       loadContract();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error al aprobar contrato');
@@ -83,16 +103,16 @@ export const ContractDetailPage = () => {
   };
 
   const handleUploadSigned = async () => {
-    if (!file) {
+    if (!signedFile) {
       toast.error('Por favor seleccione un archivo');
       return;
     }
 
     setActionLoading(true);
     try {
-      await contractsAPI.uploadSigned(id, file);
+      await contractsAPI.uploadSigned(id, signedFile);
       toast.success('Contrato firmado cargado exitosamente');
-      setFile(null);
+      setSignedFile(null);
       loadContract();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error al cargar contrato firmado');
@@ -201,7 +221,74 @@ export const ContractDetailPage = () => {
               </CardContent>
             </Card>
 
-            {contract.status === 'approved' && user.role === 'collaborator' && (
+            {/* Documentos del Contrato */}
+            <Card className="border border-slate-200 rounded-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-brand-navy">Documentos del Contrato</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Documento Original (para firmar) */}
+                {contract.contract_file_id && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText size={24} className="text-blue-700" />
+                        <div>
+                          <p className="font-semibold text-blue-900">Contrato Original</p>
+                          <p className="text-sm text-blue-700">Documento para descargar y firmar</p>
+                        </div>
+                      </div>
+                      <a
+                        href={contractsAPI.downloadFile(contract.contract_file_id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium"
+                        data-testid="download-contract-btn"
+                      >
+                        <Download size={16} />
+                        Descargar
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* Documento Firmado */}
+                {contract.signed_file_id && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 size={24} className="text-emerald-700" />
+                        <div>
+                          <p className="font-semibold text-emerald-900">Contrato Firmado</p>
+                          <p className="text-sm text-emerald-700">Documento firmado por el colaborador</p>
+                        </div>
+                      </div>
+                      <a
+                        href={contractsAPI.downloadFile(contract.signed_file_id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-sm hover:bg-emerald-700 transition-colors text-sm font-medium"
+                        data-testid="download-signed-btn"
+                      >
+                        <Download size={16} />
+                        Descargar
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sin documentos */}
+                {!contract.contract_file_id && !contract.signed_file_id && (
+                  <div className="text-center py-6 text-slate-500">
+                    <FileText size={32} className="mx-auto mb-2 opacity-50" />
+                    <p>No hay documentos disponibles aún</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Colaborador: Cargar contrato firmado */}
+            {contract.status === 'approved' && user.role === 'collaborator' && contract.contract_file_id && (
               <Card className="border border-slate-200 rounded-sm">
                 <CardHeader>
                   <CardTitle className="text-lg font-bold text-brand-navy">Cargar Contrato Firmado</CardTitle>
@@ -209,24 +296,25 @@ export const ContractDetailPage = () => {
                 <CardContent className="space-y-4">
                   <Alert>
                     <AlertDescription>
-                      El contrato ha sido aprobado. Por favor descárguelo, fírmelo y cárguelo nuevamente.
+                      El contrato ha sido aprobado. Por favor descargue el documento original, fírmelo y cárguelo nuevamente.
                     </AlertDescription>
                   </Alert>
                   <div>
                     <input
                       type="file"
                       accept=".pdf"
-                      onChange={(e) => setFile(e.target.files[0])}
+                      onChange={(e) => setSignedFile(e.target.files[0])}
                       data-testid="contract-file-input"
                       className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-bold file:uppercase file:bg-brand-navy file:text-white hover:file:bg-brand-navy/90"
                     />
                   </div>
                   <Button
                     onClick={handleUploadSigned}
-                    disabled={!file || actionLoading}
+                    disabled={!signedFile || actionLoading}
                     data-testid="upload-signed-button"
                     className="w-full bg-brand-navy hover:bg-brand-navy/90 text-white rounded-sm"
                   >
+                    <Upload size={18} className="mr-2" />
                     {actionLoading ? 'Cargando...' : 'Cargar Contrato Firmado'}
                   </Button>
                 </CardContent>
@@ -253,7 +341,7 @@ export const ContractDetailPage = () => {
                 )}
                 {contract.status === 'pending_approval' && hasRole('legal_rep') && (
                   <Button
-                    onClick={handleApprove}
+                    onClick={() => setShowApproveDialog(true)}
                     disabled={actionLoading}
                     data-testid="approve-contract-button"
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm"
@@ -262,11 +350,72 @@ export const ContractDetailPage = () => {
                     Aprobar Contrato
                   </Button>
                 )}
+                
+                {/* Estado del contrato */}
+                {contract.status === 'approved' && !contract.signed_file_id && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-sm text-sm text-amber-800">
+                    Esperando que el colaborador firme y cargue el contrato
+                  </div>
+                )}
+                {contract.status === 'active' && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-sm text-sm text-emerald-800">
+                    Contrato activo y firmado
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Dialog para aprobar y subir documento */}
+      <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-brand-navy">Aprobar Contrato</DialogTitle>
+            <DialogDescription>
+              Para aprobar el contrato, debe cargar el documento que el colaborador descargará, firmará y volverá a subir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-xs uppercase text-slate-500 font-bold">
+                Documento del Contrato (PDF)
+              </Label>
+              <Input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setApproveFile(e.target.files[0])}
+                data-testid="approve-file-input"
+                className="rounded-sm"
+              />
+              <p className="text-xs text-slate-500">
+                Este documento será enviado al colaborador para que lo firme
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowApproveDialog(false);
+                setApproveFile(null);
+              }}
+              className="flex-1 rounded-sm"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleApprove}
+              disabled={!approveFile || actionLoading}
+              data-testid="confirm-approve-button"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm"
+            >
+              {actionLoading ? 'Aprobando...' : 'Aprobar y Cargar'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
