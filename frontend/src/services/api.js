@@ -46,7 +46,9 @@ export const authAPI = {
 export const usersAPI = {
   list: (role) => api.get('/users', { params: { role } }),
   get: (id) => api.get(`/users/${id}`),
-  update: (id, data) => api.put(`/users/${id}`, data)
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.put(`/users/${id}`, data),
+  delete: (id) => api.delete(`/users/${id}`)
 };
 
 // Contracts
