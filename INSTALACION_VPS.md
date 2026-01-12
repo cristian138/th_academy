@@ -69,19 +69,16 @@ sudo systemctl status mongod
 
 ---
 
-## Paso 4: Crear Usuario y Directorio de la Aplicación
+## Paso 4: Crear Directorio de la Aplicación
 
 ```bash
-# Crear usuario para la aplicación
-sudo useradd -m -s /bin/bash jotuns
-
 # Crear directorio de la aplicación
-sudo mkdir -p /opt/jotuns-app
-sudo chown jotuns:jotuns /opt/jotuns-app
+sudo mkdir -p /var/www/jotuns-app
+sudo chown www-data:www-data /var/www/jotuns-app
 
 # Crear directorio para archivos subidos
-sudo mkdir -p /opt/jotuns-app/storage/{bills,documents,vouchers,contracts}
-sudo chown -R jotuns:jotuns /opt/jotuns-app/storage
+sudo mkdir -p /var/www/jotuns-app/storage/{bills,documents,vouchers,contracts}
+sudo chown -R www-data:www-data /var/www/jotuns-app/storage
 ```
 
 ---
@@ -90,14 +87,17 @@ sudo chown -R jotuns:jotuns /opt/jotuns-app/storage
 
 **Opción A: Usando Git (recomendado)**
 ```bash
-cd /opt/jotuns-app
-sudo -u jotuns git clone https://github.com/SU_USUARIO/SU_REPOSITORIO.git .
+cd /var/www/jotuns-app
+sudo -u www-data git clone https://github.com/SU_USUARIO/SU_REPOSITORIO.git .
 ```
 
 **Opción B: Usando SCP desde su máquina local**
 ```bash
 # Desde su máquina local
-scp -r /path/to/app/* usuario@su-servidor:/opt/jotuns-app/
+scp -r /path/to/app/* usuario@su-servidor:/var/www/jotuns-app/
+
+# Luego en el servidor, ajustar permisos
+sudo chown -R www-data:www-data /var/www/jotuns-app
 ```
 
 ---
@@ -106,10 +106,10 @@ scp -r /path/to/app/* usuario@su-servidor:/opt/jotuns-app/
 
 ```bash
 # Cambiar al directorio del backend
-cd /opt/jotuns-app/backend
+cd /var/www/jotuns-app/backend
 
 # Crear entorno virtual
-sudo -u jotuns python3.11 -m venv venv
+sudo -u www-data python3.11 -m venv venv
 
 # Activar entorno virtual
 source venv/bin/activate
@@ -121,7 +121,7 @@ pip install -r requirements.txt
 ### Crear archivo de configuración `.env`
 
 ```bash
-sudo -u jotuns nano /opt/jotuns-app/backend/.env
+sudo nano /var/www/jotuns-app/backend/.env
 ```
 
 Contenido del archivo:
@@ -159,16 +159,16 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 ## Paso 7: Configurar el Frontend
 
 ```bash
-cd /opt/jotuns-app/frontend
+cd /var/www/jotuns-app/frontend
 
 # Instalar dependencias
-sudo -u jotuns yarn install
+sudo -u www-data yarn install
 ```
 
 ### Crear archivo de configuración `.env`
 
 ```bash
-sudo -u jotuns nano /opt/jotuns-app/frontend/.env
+sudo nano /var/www/jotuns-app/frontend/.env
 ```
 
 Contenido:
@@ -179,7 +179,7 @@ REACT_APP_BACKEND_URL=https://talento.academiajotuns.com
 ### Compilar el frontend para producción
 
 ```bash
-sudo -u jotuns yarn build
+sudo -u www-data yarn build
 ```
 
 ---
@@ -195,14 +195,14 @@ sudo nano /etc/supervisor/conf.d/jotuns-backend.conf
 Contenido:
 ```ini
 [program:jotuns-backend]
-directory=/opt/jotuns-app/backend
-command=/opt/jotuns-app/backend/venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001
-user=jotuns
+directory=/var/www/jotuns-app/backend
+command=/var/www/jotuns-app/backend/venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001
+user=www-data
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/supervisor/jotuns-backend.err.log
 stdout_logfile=/var/log/supervisor/jotuns-backend.out.log
-environment=PATH="/opt/jotuns-app/backend/venv/bin"
+environment=PATH="/var/www/jotuns-app/backend/venv/bin"
 ```
 
 ### Recargar Supervisor
@@ -261,7 +261,7 @@ server {
     ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
 
     # Frontend (archivos estáticos)
-    root /opt/jotuns-app/frontend/build;
+    root /var/www/jotuns-app/frontend/build;
     index index.html;
 
     # Tamaño máximo de subida de archivos (50MB)
@@ -309,7 +309,7 @@ sudo systemctl restart nginx
 ## Paso 10: Crear Usuarios Iniciales
 
 ```bash
-cd /opt/jotuns-app/backend
+cd /var/www/jotuns-app/backend
 source venv/bin/activate
 
 # Ejecutar script de seed (si existe)
@@ -393,10 +393,10 @@ mongodump --db jotuns_talento_humano --out /opt/backups/$(date +%Y%m%d)
 ## Actualizar la Aplicación
 
 ```bash
-cd /opt/jotuns-app
+cd /var/www/jotuns-app
 
 # Obtener últimos cambios
-sudo -u jotuns git pull
+sudo -u www-data git pull
 
 # Backend
 cd backend
@@ -406,8 +406,8 @@ sudo supervisorctl restart jotuns-backend
 
 # Frontend
 cd ../frontend
-sudo -u jotuns yarn install
-sudo -u jotuns yarn build
+sudo -u www-data yarn install
+sudo -u www-data yarn build
 ```
 
 ---
@@ -434,8 +434,8 @@ sudo supervisorctl restart jotuns-backend
 
 ### Problemas de permisos
 ```bash
-sudo chown -R jotuns:jotuns /opt/jotuns-app
-sudo chmod -R 755 /opt/jotuns-app/storage
+sudo chown -R www-data:www-data /var/www/jotuns-app
+sudo chmod -R 755 /var/www/jotuns-app/storage
 ```
 
 ---
