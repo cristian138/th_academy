@@ -232,7 +232,8 @@ export const UsersPage = () => {
             <span>CC: {user.identification}</span>
           </div>
         )}
-        {user.role !== 'superadmin' && (
+        {/* Show actions: Edit for all except yourself, Delete only for superadmin */}
+        {user.id !== currentUser?.id && (
           <div className="flex gap-2 pt-2 border-t border-slate-100">
             <Button
               size="sm"
@@ -243,14 +244,16 @@ export const UsersPage = () => {
               <Pencil size={14} className="mr-1" />
               Editar
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => openDeleteDialog(user)}
-              className="rounded-sm text-xs text-red-600 border-red-200 hover:bg-red-50"
-            >
-              <Trash2 size={14} />
-            </Button>
+            {isSuperAdmin && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => openDeleteDialog(user)}
+                className="rounded-sm text-xs text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <Trash2 size={14} />
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
