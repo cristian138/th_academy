@@ -52,6 +52,10 @@ export const ContractDetailPage = () => {
     }
   };
 
+  useEffect(() => {
+    loadContract();
+  }, [id]);
+
   const handleReview = async () => {
     setActionLoading(true);
     try {
