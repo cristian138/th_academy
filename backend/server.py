@@ -559,50 +559,186 @@ async def upload_signed_contract(
 
 # ============= DOCUMENT ROUTES =============
 
-@app.post("/api/documents", response_model=Document, status_code=status.HTTP_201_CREATED)
-async def upload_document(
-    document_type: DocumentType,
-    file: UploadFile = File(...),
-    expiry_date: Optional[str] = None,
+# Documentos obligatorios y opcionales
+REQUIRED_DOCUMENTS = [
+    DocumentType.CEDULA,
+    DocumentType.RUT,
+    DocumentType.CERT_BANCARIA,
+    DocumentType.ANTECEDENTES
+]
+
+OPTIONAL_DOCUMENTS = [
+    DocumentType.CERT_LABORAL,
+    DocumentType.CERT_EDUCATIVA,
+    DocumentType.LICENCIA
+]
+
+DOCUMENT_LABELS = {
+    "cedula": "Cédula de Ciudadanía",
+    "rut": "RUT",
+    "cert_laboral": "Certificado Laboral",
+    "cert_educativa": "Certificado Educativo",
+    "cert_bancaria": "Certificación Bancaria",
+    "antecedentes": "Antecedentes",
+    "licencia": "Licencia/Permiso"
+}
+
+@app.get("/api/contracts/{contract_id}/documents")
+async def get_contract_documents(
+    contract_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Upload document"""
+    """Get all documents for a contract with status info"""
     db = await get_database()
     
-    # Upload to OneDrive
+    # Verify contract exists and user has access
+    contract = await db.contracts.find_one({"id": contract_id})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    if current_user.role == UserRole.COLLABORATOR and contract["collaborator_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Get uploaded documents for this contract
+    documents = await db.documents.find({"contract_id": contract_id}, {"_id": 0}).to_list(100)
+    doc_map = {doc["document_type"]: doc for doc in documents}
+    
+    # Build response with all required and optional documents
+    result = {
+        "contract_id": contract_id,
+        "required_documents": [],
+        "optional_documents": [],
+        "all_required_approved": True,
+        "can_approve_contract": False
+    }
+    
+    for doc_type in REQUIRED_DOCUMENTS:
+        doc_info = {
+            "type": doc_type.value,
+            "label": DOCUMENT_LABELS.get(doc_type.value, doc_type.value),
+            "required": True,
+            "uploaded": False,
+            "status": None,
+            "document": None
+        }
+        if doc_type.value in doc_map:
+            doc = doc_map[doc_type.value]
+            doc_info["uploaded"] = True
+            doc_info["status"] = doc["status"]
+            doc_info["document"] = doc
+            if doc["status"] != "approved":
+                result["all_required_approved"] = False
+        else:
+            result["all_required_approved"] = False
+        result["required_documents"].append(doc_info)
+    
+    for doc_type in OPTIONAL_DOCUMENTS:
+        doc_info = {
+            "type": doc_type.value,
+            "label": DOCUMENT_LABELS.get(doc_type.value, doc_type.value),
+            "required": False,
+            "uploaded": False,
+            "status": None,
+            "document": None
+        }
+        if doc_type.value in doc_map:
+            doc = doc_map[doc_type.value]
+            doc_info["uploaded"] = True
+            doc_info["status"] = doc["status"]
+            doc_info["document"] = doc
+        result["optional_documents"].append(doc_info)
+    
+    # Can approve contract if all required documents are approved
+    result["can_approve_contract"] = result["all_required_approved"]
+    
+    return result
+
+@app.post("/api/contracts/{contract_id}/documents", status_code=status.HTTP_201_CREATED)
+async def upload_contract_document(
+    contract_id: str,
+    document_type: DocumentType,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload a document for a specific contract"""
+    db = await get_database()
+    
+    # Verify contract exists
+    contract = await db.contracts.find_one({"id": contract_id})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    # Verify user is the collaborator of this contract
+    if current_user.role == UserRole.COLLABORATOR and contract["collaborator_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Check if document already exists for this contract
+    existing_doc = await db.documents.find_one({
+        "contract_id": contract_id,
+        "document_type": document_type
+    })
+    
+    # Upload file
     file_content = await file.read()
     result = await storage_service.upload_file(
         file_content=file_content,
-        file_name=f"{document_type.value}_{current_user.id}_{file.filename}",
+        file_name=f"doc_{contract_id}_{document_type.value}_{file.filename}",
         folder_path="SportsAdmin/Documents"
     )
     
     if not result:
         raise HTTPException(status_code=500, detail="Failed to upload file")
     
-    # Create document record
-    doc_dict = {
-        "id": str(uuid.uuid4()),
-        "document_type": document_type,
-        "user_id": current_user.id,
-        "file_name": file.filename,
-        "status": DocumentStatus.UPLOADED,
-        "onedrive_file_id": result["id"],
-        "file_url": result.get("webUrl", "#"),
-        "expiry_date": datetime.fromisoformat(expiry_date) if expiry_date else None,
-        "created_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc)
-    }
+    if existing_doc:
+        # Update existing document
+        await db.documents.update_one(
+            {"id": existing_doc["id"]},
+            {"$set": {
+                "file_name": file.filename,
+                "file_id": result["id"],
+                "status": DocumentStatus.UPLOADED,
+                "review_notes": None,
+                "reviewed_by": None,
+                "updated_at": datetime.now(timezone.utc)
+            }}
+        )
+        doc_id = existing_doc["id"]
+    else:
+        # Create new document
+        doc_dict = {
+            "id": str(uuid.uuid4()),
+            "document_type": document_type,
+            "contract_id": contract_id,
+            "file_name": file.filename,
+            "file_id": result["id"],
+            "status": DocumentStatus.UPLOADED,
+            "uploaded_by": current_user.id,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        }
+        await db.documents.insert_one(doc_dict)
+        doc_id = doc_dict["id"]
     
-    await db.documents.insert_one(doc_dict)
+    # Update contract status if it was pending_documents
+    if contract["status"] == ContractStatus.PENDING_DOCUMENTS:
+        # Check if all required documents are now uploaded
+        docs = await db.documents.find({"contract_id": contract_id}, {"_id": 0}).to_list(100)
+        uploaded_types = {doc["document_type"] for doc in docs}
+        required_types = {dt.value for dt in REQUIRED_DOCUMENTS}
+        
+        if required_types.issubset(uploaded_types):
+            await db.contracts.update_one(
+                {"id": contract_id},
+                {"$set": {"status": ContractStatus.UNDER_REVIEW, "updated_at": datetime.now(timezone.utc)}}
+            )
     
-    # Notify admin
+    # Notify admins
     admins = await db.users.find({"role": UserRole.ADMIN}).to_list(100)
     for admin in admins:
         await db.notifications.insert_one({
             "user_id": admin["id"],
-            "title": "Nuevo Documento Cargado",
-            "message": f"{current_user.name} ha cargado un documento: {document_type.value}",
+            "title": "Documento Cargado",
+            "message": f"Documento {DOCUMENT_LABELS.get(document_type.value, document_type.value)} cargado para contrato: {contract['title']}",
             "notification_type": "document_uploaded",
             "read": False,
             "created_at": datetime.now(timezone.utc)
@@ -610,33 +746,13 @@ async def upload_document(
     
     await audit_service.log(
         user_id=current_user.id,
-        action="upload_document",
+        action="upload_contract_document",
         resource_type="document",
-        resource_id=doc_dict["id"]
+        resource_id=doc_id,
+        details={"contract_id": contract_id, "document_type": document_type.value}
     )
     
-    return Document(**doc_dict)
-
-@app.get("/api/documents", response_model=List[Document])
-async def list_documents(
-    user_id: Optional[str] = None,
-    document_type: Optional[DocumentType] = None,
-    current_user: User = Depends(get_current_user)
-):
-    """List documents"""
-    db = await get_database()
-    query = {}
-    
-    if current_user.role == UserRole.COLLABORATOR:
-        query["user_id"] = current_user.id
-    elif user_id:
-        query["user_id"] = user_id
-    
-    if document_type:
-        query["document_type"] = document_type
-    
-    documents = await db.documents.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    return [Document(**doc) for doc in documents]
+    return {"message": "Document uploaded successfully", "document_id": doc_id}
 
 @app.put("/api/documents/{document_id}/review")
 async def review_document(
@@ -644,42 +760,58 @@ async def review_document(
     document_update: DocumentUpdate,
     current_user: User = Depends(require_role(UserRole.ADMIN))
 ):
-    """Review and approve/reject document"""
+    """Review and approve/reject a document"""
     db = await get_database()
+    
+    document = await db.documents.find_one({"id": document_id})
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
     
     update_data = document_update.model_dump(exclude_unset=True)
     update_data["reviewed_by"] = current_user.id
     update_data["updated_at"] = datetime.now(timezone.utc)
     
-    result = await db.documents.update_one(
+    await db.documents.update_one(
         {"id": document_id},
         {"$set": update_data}
     )
     
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Document not found")
-    
-    document = await db.documents.find_one({"id": document_id})
-    
-    # Notify user
-    await db.notifications.insert_one({
-        "user_id": document["user_id"],
-        "title": "Documento Revisado",
-        "message": f"Su documento {document['document_type']} ha sido revisado. Estado: {update_data.get('status', 'N/A')}",
-        "notification_type": "document_reviewed",
-        "read": False,
-        "created_at": datetime.now(timezone.utc)
-    })
+    # Get contract to notify collaborator
+    contract = await db.contracts.find_one({"id": document["contract_id"]})
+    if contract:
+        await db.notifications.insert_one({
+            "user_id": contract["collaborator_id"],
+            "title": "Documento Revisado",
+            "message": f"Su documento {DOCUMENT_LABELS.get(document['document_type'], document['document_type'])} ha sido {update_data.get('status', 'revisado')}",
+            "notification_type": "document_reviewed",
+            "read": False,
+            "created_at": datetime.now(timezone.utc)
+        })
+        
+        # Check if all required documents are now approved
+        if update_data.get("status") == "approved":
+            docs = await db.documents.find({"contract_id": contract["id"]}, {"_id": 0}).to_list(100)
+            required_types = {dt.value for dt in REQUIRED_DOCUMENTS}
+            approved_required = sum(1 for doc in docs if doc["document_type"] in required_types and doc["status"] == "approved")
+            
+            if approved_required >= len(required_types):
+                # All required docs approved, move to pending_approval
+                if contract["status"] == ContractStatus.UNDER_REVIEW:
+                    await db.contracts.update_one(
+                        {"id": contract["id"]},
+                        {"$set": {"status": ContractStatus.PENDING_APPROVAL, "updated_at": datetime.now(timezone.utc)}}
+                    )
     
     await audit_service.log(
         user_id=current_user.id,
         action="review_document",
         resource_type="document",
-        resource_id=document_id
+        resource_id=document_id,
+        details={"status": update_data.get("status")}
     )
     
     updated_doc = await db.documents.find_one({"id": document_id}, {"_id": 0})
-    return Document(**updated_doc)
+    return updated_doc
 
 @app.get("/api/documents/expiring")
 async def get_expiring_documents(
@@ -696,7 +828,7 @@ async def get_expiring_documents(
         "status": DocumentStatus.APPROVED
     }, {"_id": 0}).to_list(1000)
     
-    return [Document(**doc) for doc in documents]
+    return documents
 
 # ============= PAYMENT ROUTES =============
 
