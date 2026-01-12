@@ -138,6 +138,98 @@ class SportsAdminAPITester:
         self.log_test("Get Notifications", expected, f"Found {len(data) if isinstance(data, list) else 0} notifications")
         return expected, data
 
+    def test_list_payments(self):
+        """Test list payments"""
+        success, data, status = self.make_request('GET', '/payments')
+        expected = success and isinstance(data, list)
+        self.log_test("List Payments", expected, f"Found {len(data) if isinstance(data, list) else 0} payments")
+        return expected, data
+
+    def test_create_payment(self, contract_id: str):
+        """Test create payment (accountant only)"""
+        payment_data = {
+            "contract_id": contract_id,
+            "amount": 3500000,
+            "payment_date": datetime.now().strftime("%Y-%m-%d"),
+            "description": "Pago de prueba E2E"
+        }
+        
+        success, data, status = self.make_request('POST', '/payments', payment_data)
+        expected = success and 'id' in data and data.get('status') == 'pending_bill'
+        details = f"Status: {status}, Payment ID: {data.get('id', 'N/A')}"
+        self.log_test("Create Payment", expected, details)
+        return expected, data
+
+    def test_payment_workflow(self):
+        """Test payment creation workflow"""
+        print("\n💰 Testing Payment Workflow...")
+        
+        # First login as contador (accountant)
+        if not self.test_login("contador"):
+            print("❌ Cannot login as contador - skipping payment tests")
+            return False
+        
+        # Get active contracts
+        success, contracts = self.test_list_contracts()
+        if not success:
+            print("❌ Cannot get contracts - skipping payment tests")
+            return False
+        
+        # Find an active contract
+        active_contract = None
+        for contract in contracts:
+            if contract.get('status') == 'active':
+                active_contract = contract
+                break
+        
+        if not active_contract:
+            print("⚠️  No active contracts found - cannot test payment creation")
+            return True  # Not a failure, just no data to test with
+        
+        print(f"📋 Using active contract: {active_contract.get('title', 'N/A')}")
+        
+        # Test create payment
+        payment_success, payment_data = self.test_create_payment(active_contract['id'])
+        
+        if payment_success:
+            # Test list payments to verify it appears
+            list_success, payments = self.test_list_payments()
+            if list_success:
+                # Check if our payment is in the list
+                created_payment = None
+                for payment in payments:
+                    if payment.get('id') == payment_data.get('id'):
+                        created_payment = payment
+                        break
+                
+                if created_payment:
+                    self.log_test("Payment in List", True, f"Amount: ${created_payment.get('amount', 0)}")
+                else:
+                    self.log_test("Payment in List", False, "Created payment not found in list")
+        
+        # Test as collaborator - should NOT be able to create payments
+        if self.test_login("collaborator"):
+            print("\n👨‍💼 Testing Payment Access as Collaborator...")
+            
+            # Try to create payment (should fail)
+            payment_data = {
+                "contract_id": active_contract['id'],
+                "amount": 1000000,
+                "payment_date": datetime.now().strftime("%Y-%m-%d"),
+                "description": "Should fail"
+            }
+            
+            success, data, status = self.make_request('POST', '/payments', payment_data)
+            # Should fail with 403 Forbidden
+            expected_fail = not success and status == 403
+            self.log_test("Collaborator Create Payment (Should Fail)", expected_fail, f"Status: {status}")
+            
+            # But should be able to list payments
+            list_success, payments = self.test_list_payments()
+            self.log_test("Collaborator List Payments", list_success, f"Found {len(payments) if isinstance(payments, list) else 0} payments")
+        
+        return payment_success
+
     def test_contract_workflow(self):
         """Test contract approval workflow"""
         print("\n🔄 Testing Contract Workflow...")
