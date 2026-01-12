@@ -41,9 +41,16 @@ export const LoginPage = () => {
       >
         <div className="absolute inset-0 bg-brand-navy/90"></div>
         <div className="relative z-10 p-12 flex flex-col justify-center text-white">
-          <h1 className="text-5xl font-bold mb-4">SportsAdmin Pro</h1>
-          <p className="text-xl text-white/80">Sistema de Gestión de Contratos</p>
-          <p className="mt-4 text-white/60">Administre contratos, documentos y pagos de forma eficiente</p>
+          <div className="mb-8">
+            <img 
+              src="https://images.unsplash.com/photo-1681913297857-0ce269a5810a?crop=entropy&cs=srgb&fm=jpg&q=85&w=120&h=120&fit=crop" 
+              alt="Jotuns Club Logo" 
+              className="w-20 h-20 rounded-full border-4 border-white/20 mb-4"
+            />
+          </div>
+          <h1 className="text-5xl font-bold mb-4">Academia Jotuns Club SAS</h1>
+          <p className="text-xl text-white/80">Sistema de Gestión de Talento Humano</p>
+          <p className="mt-4 text-white/60">Administre contratos, documentos y pagos de colaboradores</p>
         </div>
       </div>
 
