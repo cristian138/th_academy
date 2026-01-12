@@ -4,10 +4,27 @@ import { useAuth } from '../context/AuthContext';
 import { paymentsAPI, contractsAPI } from '../services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
-import { DollarSign, Upload, CheckCircle2, Clock } from 'lucide-react';
+import { DollarSign, Upload, CheckCircle2, Clock, Plus } from 'lucide-react';
 
 const getStatusBadge = (status) => {
   const statusMap = {
@@ -27,11 +44,25 @@ const getStatusBadge = (status) => {
 export const PaymentsPage = () => {
   const { user, hasRole } = useAuth();
   const [payments, setPayments] = useState([]);
+  const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadingBill, setUploadingBill] = useState(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [creating, setCreating] = useState(false);
+  
+  // Form state for creating payment
+  const [formData, setFormData] = useState({
+    contract_id: '',
+    amount: '',
+    payment_date: new Date().toISOString().split('T')[0],
+    description: ''
+  });
 
   useEffect(() => {
     loadPayments();
+    if (hasRole('accountant')) {
+      loadContracts();
+    }
   }, []);
 
   const loadPayments = async () => {
@@ -42,6 +73,46 @@ export const PaymentsPage = () => {
       console.error('Error loading payments:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadContracts = async () => {
+    try {
+      const response = await contractsAPI.list({ status: 'active' });
+      setContracts(response.data);
+    } catch (error) {
+      console.error('Error loading contracts:', error);
+    }
+  };
+
+  const handleCreatePayment = async () => {
+    if (!formData.contract_id || !formData.amount) {
+      toast.error('Por favor complete los campos obligatorios');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const paymentData = {
+        ...formData,
+        amount: parseFloat(formData.amount),
+        payment_date: new Date(formData.payment_date).toISOString()
+      };
+
+      await paymentsAPI.create(paymentData);
+      toast.success('Pago creado exitosamente');
+      setShowCreateDialog(false);
+      setFormData({
+        contract_id: '',
+        amount: '',
+        payment_date: new Date().toISOString().split('T')[0],
+        description: ''
+      });
+      loadPayments();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al crear pago');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -71,9 +142,105 @@ export const PaymentsPage = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold text-brand-navy mb-2">Pagos</h1>
-          <p className="text-slate-600">Gestione los pagos y comprobantes</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-brand-navy mb-2">Pagos</h1>
+            <p className="text-slate-600">Gestione los pagos y comprobantes</p>
+          </div>
+          
+          {hasRole('accountant') && (
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button
+                  data-testid="create-payment-button"
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-white rounded-sm font-medium px-6 py-2.5 uppercase tracking-wide text-xs"
+                >
+                  <Plus size={18} className="mr-2" />
+                  Registrar Pago
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle className="text-brand-navy">Registrar Nuevo Pago</DialogTitle>
+                  <DialogDescription>
+                    Registre un pago para un contrato activo. El colaborador será notificado para cargar su cuenta de cobro.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase text-slate-500 font-bold">Contrato</Label>
+                    <Select
+                      value={formData.contract_id}
+                      onValueChange={(value) => setFormData({ ...formData, contract_id: value })}
+                    >
+                      <SelectTrigger data-testid="contract-select" className="rounded-sm">
+                        <SelectValue placeholder="Seleccione un contrato" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {contracts.map((contract) => (
+                          <SelectItem key={contract.id} value={contract.id}>
+                            {contract.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase text-slate-500 font-bold">Monto (COP)</Label>
+                    <Input
+                      type="number"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      placeholder="3500000"
+                      data-testid="amount-input"
+                      className="rounded-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase text-slate-500 font-bold">Fecha de Pago</Label>
+                    <Input
+                      type="date"
+                      value={formData.payment_date}
+                      onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
+                      data-testid="payment-date-input"
+                      className="rounded-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase text-slate-500 font-bold">Descripción (Opcional)</Label>
+                    <Textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Ej: Pago mes de enero 2025"
+                      data-testid="description-input"
+                      className="rounded-sm"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCreateDialog(false)}
+                    className="flex-1 rounded-sm"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleCreatePayment}
+                    disabled={creating || !formData.contract_id || !formData.amount}
+                    data-testid="submit-payment-button"
+                    className="flex-1 bg-brand-navy hover:bg-brand-navy/90 text-white rounded-sm"
+                  >
+                    {creating ? 'Creando...' : 'Registrar Pago'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         {payments.length === 0 ? (
@@ -81,6 +248,14 @@ export const PaymentsPage = () => {
             <CardContent className="py-12 text-center">
               <DollarSign size={48} className="mx-auto mb-4 text-slate-300" />
               <p className="text-slate-500">No hay pagos registrados</p>
+              {hasRole('accountant') && (
+                <Button
+                  onClick={() => setShowCreateDialog(true)}
+                  className="mt-4 bg-brand-navy hover:bg-brand-navy/90 text-white rounded-sm"
+                >
+                  Registrar Primer Pago
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
