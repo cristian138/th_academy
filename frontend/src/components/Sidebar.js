@@ -34,8 +34,17 @@ export const Sidebar = () => {
   return (
     <aside className="w-72 bg-brand-navy min-h-screen text-white fixed left-0 top-0 flex flex-col">
       <div className="p-6 border-b border-white/10">
-        <h1 className="text-2xl font-bold tracking-tight">SportsAdmin</h1>
-        <p className="text-sm text-white/60 mt-1">Sistema de Contratos</p>
+        <div className="flex items-center gap-3 mb-2">
+          <img 
+            src="https://images.unsplash.com/photo-1681913297857-0ce269a5810a?crop=entropy&cs=srgb&fm=jpg&q=85&w=80&h=80&fit=crop" 
+            alt="Jotuns Club Logo" 
+            className="w-12 h-12 rounded-full object-cover border-2 border-brand-blue"
+          />
+          <div>
+            <h1 className="text-lg font-bold tracking-tight">Jotuns Club SAS</h1>
+            <p className="text-xs text-white/60">Talento Humano</p>
+          </div>
+        </div>
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
