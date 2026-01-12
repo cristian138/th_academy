@@ -228,6 +228,111 @@ async def update_user(
     updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "hashed_password": 0})
     return User(**updated_user)
 
+@app.delete("/api/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    current_user: User = Depends(require_role(UserRole.ADMIN))
+):
+    """Delete user (admin only) - Soft delete by deactivating"""
+    db = await get_database()
+    
+    # Prevent deleting yourself
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="No puede eliminarse a sí mismo")
+    
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Prevent deleting superadmin
+    if user["role"] == "superadmin":
+        raise HTTPException(status_code=400, detail="No puede eliminar un superadministrador")
+    
+    # Check if user has active contracts
+    active_contracts = await db.contracts.count_documents({
+        "collaborator_id": user_id,
+        "status": {"$in": ["active", "pending_documents", "under_review", "pending_approval", "approved"]}
+    })
+    
+    if active_contracts > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"El usuario tiene {active_contracts} contrato(s) activo(s). Finalice los contratos antes de eliminar."
+        )
+    
+    # Soft delete - deactivate user
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    await audit_service.log(
+        user_id=current_user.id,
+        action="delete_user",
+        resource_type="user",
+        resource_id=user_id,
+        details={"deleted_user_email": user["email"]}
+    )
+    
+    return {"message": "Usuario eliminado exitosamente"}
+
+@app.post("/api/users", status_code=status.HTTP_201_CREATED)
+async def create_user(
+    user_create: UserCreate,
+    current_user: User = Depends(require_role(UserRole.ADMIN))
+):
+    """Create a new user (admin only)"""
+    db = await get_database()
+    
+    # Check if email exists
+    existing = await db.users.find_one({"email": user_create.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="El correo electrónico ya está registrado")
+    
+    user_dict = {
+        "id": str(uuid.uuid4()),
+        "email": user_create.email,
+        "name": user_create.name,
+        "role": user_create.role,
+        "hashed_password": auth_service.hash_password(user_create.password),
+        "phone": user_create.phone,
+        "identification": user_create.identification,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    await db.users.insert_one(user_dict)
+    
+    # Send welcome email
+    await email_service.send_email(
+        recipient_email=user_create.email,
+        subject="Bienvenido al Sistema de Talento Humano - Jotuns Club",
+        body=f"""
+        <h2>Bienvenido(a) {user_create.name}</h2>
+        <p>Se ha creado su cuenta en el Sistema de Talento Humano de la Academia Jotuns Club.</p>
+        <p><strong>Sus credenciales de acceso:</strong></p>
+        <ul>
+            <li>Correo: {user_create.email}</li>
+            <li>Contraseña: {user_create.password}</li>
+        </ul>
+        <p>Por favor cambie su contraseña después del primer inicio de sesión.</p>
+        <p>Saludos cordiales,<br>Sistema de Talento Humano</p>
+        """
+    )
+    
+    await audit_service.log(
+        user_id=current_user.id,
+        action="create_user",
+        resource_type="user",
+        resource_id=user_dict["id"],
+        details={"email": user_create.email, "role": user_create.role}
+    )
+    
+    # Return user without password
+    user_dict.pop("hashed_password")
+    return user_dict
+
 # ============= CONTRACT ROUTES =============
 
 @app.post("/api/contracts", response_model=Contract, status_code=status.HTTP_201_CREATED)
