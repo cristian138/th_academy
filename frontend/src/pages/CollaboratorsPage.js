@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { useAuth } from '../context/AuthContext';
 import { usersAPI } from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ import { Users, Mail, Phone, CreditCard, Plus, Pencil, Trash2 } from 'lucide-rea
 import { toast } from 'sonner';
 
 export const CollaboratorsPage = () => {
+  const { user: currentUser } = useAuth();
   const [collaborators, setCollaborators] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -41,6 +43,8 @@ export const CollaboratorsPage = () => {
     identification: ''
   });
   const [actionLoading, setActionLoading] = useState(false);
+
+  const isSuperAdmin = currentUser?.role === 'superadmin';
 
   useEffect(() => {
     loadCollaborators();
