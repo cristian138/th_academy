@@ -95,6 +95,7 @@ export const paymentsAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
+  approve: (id) => api.post(`/payments/${id}/approve`),
   confirm: (id, file) => {
     const formData = new FormData();
     formData.append('file', file);
