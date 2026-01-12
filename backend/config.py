@@ -7,11 +7,23 @@ class Settings(BaseSettings):
     mongo_url: str
     db_name: str
     
-    # Azure Microsoft Graph Configuration
+    # Azure Microsoft Graph Configuration (opcional)
     azure_client_id: str = ""
     azure_client_secret: str = ""
     azure_tenant_id: str = ""
     graph_api_endpoint: str = "https://graph.microsoft.com/v1.0"
+    
+    # SMTP Configuration
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_from_name: str = "Sistema Talento Humano"
+    
+    # Storage Configuration
+    storage_type: str = "local"  # local or onedrive
+    storage_path: str = "/app/storage"
     
     # JWT Configuration
     jwt_secret: str = "your-secret-key-change-in-production-min-32-chars"
