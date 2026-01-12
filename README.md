@@ -95,10 +95,10 @@ MONGO_URL="mongodb://localhost:27017"
 DB_NAME="sportsadmin_db"
 CORS_ORIGINS="*"
 
-# Microsoft Graph API (Opcional - para producción)
-AZURE_CLIENT_ID=""
-AZURE_CLIENT_SECRET=""
-AZURE_TENANT_ID=""
+# Microsoft Graph API - CONFIGURADAS
+AZURE_CLIENT_ID="aa7ba963-5181-462f-987a-256cdfc37994"
+AZURE_CLIENT_SECRET="9LT8Q~C2oSQBE..BOZuYOV1RNjqzJCkKURYNAa_-"
+AZURE_TENANT_ID="51eb774f-af90-4f7c-b3b4-35dfeebdeadd"
 
 # JWT
 JWT_SECRET="your-secret-key-change-in-production-min-32-chars-long-secret"
@@ -109,15 +109,17 @@ JWT_SECRET="your-secret-key-change-in-production-min-32-chars-long-secret"
 REACT_APP_BACKEND_URL=https://coach-contracts.preview.emergentagent.com
 ```
 
-### Configuración de Microsoft Graph API
+### Microsoft Graph API - ¡YA CONFIGURADO!
 
-1. Registrar aplicación en Azure Portal
-2. Configurar permisos:
-   - Mail.Send (Delegated)
-   - Files.ReadWrite.All (Application)
-   - User.Read.All (Application)
-3. Crear client secret
-4. Agregar credenciales al .env
+Las credenciales de Azure ya están configuradas y el sistema está listo para:
+- ✅ Enviar notificaciones por email (Microsoft Outlook)
+- ✅ Almacenar documentos en OneDrive
+- ✅ Gestionar archivos de contratos y pagos
+
+**Permisos configurados:**
+- Mail.Send (Envío de correos)
+- Files.ReadWrite.All (Gestión de archivos en OneDrive)
+- User.Read.All (Lectura de usuarios)
 
 ### Inicializar Datos de Prueba
 
