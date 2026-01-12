@@ -40,8 +40,8 @@ export const DashboardLayout = ({ children }) => {
             </div>
             <div className="flex items-center gap-4">
               <Popover>
-                <PopoverTrigger data-testid="notifications-button" className="relative">
-                  <button className="p-2 hover:bg-slate-100 rounded-sm transition-colors">
+                <PopoverTrigger asChild>
+                  <button data-testid="notifications-button" className="relative p-2 hover:bg-slate-100 rounded-sm transition-colors">
                     <Bell size={20} strokeWidth={1.5} />
                     {unreadCount > 0 && (
                       <span className="absolute top-1 right-1 w-2 h-2 bg-brand-red rounded-full"></span>
