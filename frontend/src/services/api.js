@@ -125,12 +125,14 @@ export const reportsAPI = {
   exportContracts: (status) => {
     const token = localStorage.getItem('token');
     const params = new URLSearchParams();
+    params.append('token', token);
     if (status) params.append('status', status);
     window.open(`${process.env.REACT_APP_BACKEND_URL}/api/reports/export/contracts?${params.toString()}`, '_blank');
   },
   exportPayments: (status) => {
     const token = localStorage.getItem('token');
     const params = new URLSearchParams();
+    params.append('token', token);
     if (status) params.append('status', status);
     window.open(`${process.env.REACT_APP_BACKEND_URL}/api/reports/export/payments?${params.toString()}`, '_blank');
   }
