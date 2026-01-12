@@ -114,13 +114,12 @@ class Contract(ContractBase):
 # Document Models
 class DocumentBase(BaseModel):
     document_type: DocumentType
-    user_id: str
+    contract_id: str  # Asociado al contrato, no al usuario
     file_name: str
     expiry_date: Optional[datetime] = None
 
 class DocumentCreate(DocumentBase):
-    onedrive_file_id: str
-    file_url: str
+    file_id: str
 
 class DocumentUpdate(BaseModel):
     status: Optional[DocumentStatus] = None
@@ -130,12 +129,26 @@ class DocumentUpdate(BaseModel):
 class Document(DocumentBase):
     id: str
     status: DocumentStatus
-    onedrive_file_id: str
-    file_url: str
+    file_id: str
+    uploaded_by: str  # Usuario que subió el documento
     reviewed_by: Optional[str] = None
     review_notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+# Lista de documentos obligatorios para un contrato
+REQUIRED_DOCUMENTS = [
+    DocumentType.CEDULA,
+    DocumentType.RUT,
+    DocumentType.CERT_BANCARIA,
+    DocumentType.ANTECEDENTES
+]
+
+OPTIONAL_DOCUMENTS = [
+    DocumentType.CERT_LABORAL,
+    DocumentType.CERT_EDUCATIVA,
+    DocumentType.LICENCIA
+]
 
 # Payment Models
 class PaymentBase(BaseModel):
