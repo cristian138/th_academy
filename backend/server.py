@@ -231,9 +231,9 @@ async def update_user(
 @app.delete("/api/users/{user_id}")
 async def delete_user(
     user_id: str,
-    current_user: User = Depends(require_role(UserRole.ADMIN))
+    current_user: User = Depends(require_role(UserRole.SUPERADMIN))
 ):
-    """Delete user (admin only) - Soft delete by deactivating"""
+    """Delete user (superadmin only) - Soft delete by deactivating"""
     db = await get_database()
     
     # Prevent deleting yourself
@@ -243,10 +243,6 @@ async def delete_user(
     user = await db.users.find_one({"id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
-    # Prevent deleting superadmin
-    if user["role"] == "superadmin":
-        raise HTTPException(status_code=400, detail="No puede eliminar un superadministrador")
     
     # Check if user has active contracts
     active_contracts = await db.contracts.count_documents({
@@ -271,7 +267,7 @@ async def delete_user(
         action="delete_user",
         resource_type="user",
         resource_id=user_id,
-        details={"deleted_user_email": user["email"]}
+        details={"deleted_user_email": user["email"], "deleted_user_role": user["role"]}
     )
     
     return {"message": "Usuario eliminado exitosamente"}
@@ -281,8 +277,15 @@ async def create_user(
     user_create: UserCreate,
     current_user: User = Depends(require_role(UserRole.ADMIN))
 ):
-    """Create a new user (admin only)"""
+    """Create a new user (admin can create all except superadmin, superadmin can create all)"""
     db = await get_database()
+    
+    # Only superadmin can create another superadmin
+    if user_create.role == UserRole.SUPERADMIN and current_user.role != UserRole.SUPERADMIN:
+        raise HTTPException(
+            status_code=403, 
+            detail="Solo un superadministrador puede crear otros superadministradores"
+        )
     
     # Check if email exists
     existing = await db.users.find_one({"email": user_create.email})
