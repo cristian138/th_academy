@@ -146,18 +146,26 @@ class SportsAdminAPITester:
         return expected, data
 
     def test_create_payment(self, contract_id: str):
-        """Test create payment (accountant only)"""
+        """Test create payment (collaborator creates cuenta de cobro)"""
         payment_data = {
             "contract_id": contract_id,
-            "amount": 3500000,
+            "amount": 4500000,
             "payment_date": datetime.now().strftime("%Y-%m-%d"),
-            "description": "Pago de prueba E2E"
+            "description": "Pago enero 2025"
         }
         
         success, data, status = self.make_request('POST', '/payments', payment_data)
-        expected = success and 'id' in data and data.get('status') == 'pending_bill'
-        details = f"Status: {status}, Payment ID: {data.get('id', 'N/A')}"
-        self.log_test("Create Payment", expected, details)
+        expected = success and 'id' in data and data.get('status') == 'draft'
+        details = f"Status: {status}, Payment ID: {data.get('id', 'N/A')}, Payment Status: {data.get('status', 'N/A')}"
+        self.log_test("Create Payment (Cuenta de Cobro)", expected, details)
+        return expected, data
+
+    def test_approve_payment(self, payment_id: str):
+        """Test approve payment (accountant approves cuenta de cobro)"""
+        success, data, status = self.make_request('POST', f'/payments/{payment_id}/approve')
+        expected = success and status == 200
+        details = f"Status: {status}, Response: {data.get('message', 'N/A')}"
+        self.log_test("Approve Payment", expected, details)
         return expected, data
 
     def test_payment_workflow(self):
