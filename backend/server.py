@@ -564,23 +564,27 @@ REQUIRED_DOCUMENTS = [
     DocumentType.CEDULA,
     DocumentType.RUT,
     DocumentType.CERT_BANCARIA,
-    DocumentType.ANTECEDENTES
+    DocumentType.ANTECEDENTES,
+    DocumentType.HOJA_VIDA,
+    DocumentType.PROPUESTA_TRABAJO
 ]
 
 OPTIONAL_DOCUMENTS = [
-    DocumentType.CERT_LABORAL,
-    DocumentType.CERT_EDUCATIVA,
-    DocumentType.LICENCIA
+    DocumentType.SOPORTES_LABORALES,
+    DocumentType.SOPORTES_EDUCATIVOS,
+    DocumentType.TARJETA_ENTRENADOR
 ]
 
 DOCUMENT_LABELS = {
     "cedula": "Cédula de Ciudadanía",
     "rut": "RUT",
-    "cert_laboral": "Certificado Laboral",
-    "cert_educativa": "Certificado Educativo",
+    "soportes_laborales": "Soportes Laborales",
+    "soportes_educativos": "Soportes Educativos",
     "cert_bancaria": "Certificación Bancaria",
     "antecedentes": "Antecedentes",
-    "licencia": "Licencia/Permiso"
+    "tarjeta_entrenador": "Tarjeta de Entrenador Deportivo / Registro Provisional",
+    "hoja_vida": "Hoja de Vida",
+    "propuesta_trabajo": "Propuesta de Trabajo"
 }
 
 @app.get("/api/contracts/{contract_id}/documents")

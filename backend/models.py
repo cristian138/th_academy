@@ -29,11 +29,13 @@ class ContractStatus(str, Enum):
 class DocumentType(str, Enum):
     CEDULA = "cedula"
     RUT = "rut"
-    CERT_LABORAL = "cert_laboral"
-    CERT_EDUCATIVA = "cert_educativa"
+    SOPORTES_LABORALES = "soportes_laborales"
+    SOPORTES_EDUCATIVOS = "soportes_educativos"
     CERT_BANCARIA = "cert_bancaria"
     ANTECEDENTES = "antecedentes"
-    LICENCIA = "licencia"
+    TARJETA_ENTRENADOR = "tarjeta_entrenador"
+    HOJA_VIDA = "hoja_vida"
+    PROPUESTA_TRABAJO = "propuesta_trabajo"
 
 class DocumentStatus(str, Enum):
     PENDING = "pending"
