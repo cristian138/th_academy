@@ -1,91 +1,74 @@
-# 📧 Configuración de SMTP en Microsoft 365
+# Habilitar SMTP en Microsoft 365
 
-## ⚠️ Problema Actual
-
-El sistema está configurado para enviar correos pero **SMTP está deshabilitado en tu tenant de Microsoft 365**.
-
-**Error actual:**
+## Problema Actual
+El envío de correos está fallando con el siguiente error:
 ```
-Authentication unsuccessful, SmtpClientAuthentication is disabled for the Tenant
+Authentication unsuccessful, user is locked by your organization's security defaults policy
 ```
 
-## ✅ Solución: Habilitar SMTP Auth en Microsoft 365
+## Solución
 
-### Opción 1: Habilitar SMTP para toda la organización
+### Opción 1: Habilitar SMTP AUTH para el usuario (Recomendado)
 
-1. **Acceder al Centro de administración de Microsoft 365**
+1. **Acceder al Centro de Administración de Microsoft 365**
    - Ir a: https://admin.microsoft.com
-   - Iniciar sesión como administrador global
 
-2. **Ir a Configuración**
-   - Settings → Org settings
-   - Click en "Modern authentication"
+2. **Navegar a Usuarios > Usuarios activos**
 
-3. **Habilitar SMTP AUTH**
-   - Buscar la opción "SMTP AUTH"
-   - Activar el toggle
+3. **Buscar el usuario:** `th.system@academiajotuns.com`
+
+4. **Seleccionar el usuario y hacer clic en "Correo"**
+
+5. **Buscar "Aplicaciones de correo electrónico"** y hacer clic en "Administrar aplicaciones de correo"
+
+6. **Habilitar "SMTP autenticado"**
+   - Marcar la casilla ✅ "SMTP autenticado"
    - Guardar cambios
 
-### Opción 2: Habilitar SMTP solo para la cuenta específica
+### Opción 2: Usar PowerShell (Alternativa)
 
-1. **Acceder a Exchange Admin Center**
-   - Ir a: https://admin.exchange.microsoft.com
-   - Iniciar sesión como administrador
+Ejecutar en PowerShell con credenciales de administrador:
 
-2. **Configurar la cuenta**
-   - Recipients → Mailboxes
-   - Buscar y seleccionar: `th.system@academiajotuns.com`
-   - Click en "Mail flow settings"
-   - Buscar "SMTP AUTH"
-   - Activar y guardar
+```powershell
+# Conectar a Exchange Online
+Connect-ExchangeOnline -UserPrincipalName admin@academiajotuns.com
 
-### Opción 3: Usar Modern Authentication (Recomendado)
+# Habilitar SMTP AUTH para el usuario
+Set-CASMailbox -Identity "th.system@academiajotuns.com" -SmtpClientAuthenticationDisabled $false
 
-En lugar de SMTP tradicional, puedes usar **OAuth 2.0** con Microsoft Graph API (más seguro):
-
-1. En Azure Portal, configurar permisos `Mail.Send`
-2. Usar las credenciales que ya tienes:
-   - Client ID: `aa7ba963-5181-462f-987a-256cdfc37994`
-   - Tenant ID: `51eb774f-af90-4f7c-b3b4-35dfeebdeadd`
-   
-Yo puedo implementar esto si prefieres (es más seguro y no requiere contraseñas).
-
----
-
-## 🔧 Estado Actual del Sistema
-
-**Mientras tanto:**
-- ✅ El sistema funciona sin bloqueos
-- ✅ Los correos se "simulan" en los logs
-- ✅ No afecta el flujo de trabajo
-- ℹ️ Los logs muestran: `📧 Email simulated to...`
-
-**Cuando habilites SMTP:**
-- Los correos se enviarán automáticamente
-- Desde: `Sistema Talento Humano - Jotuns Club <th.system@academiajotuns.com>`
-- No requiere cambios en el código
-
----
-
-## 📂 SharePoint - Próximo Paso
-
-Para conectar el sistema a tu carpeta de SharePoint:
-```
-https://clubjotuns-my.sharepoint.com/:f:/g/personal/cristian_prieto_academiajotuns_com/...
+# Verificar el cambio
+Get-CASMailbox -Identity "th.system@academiajotuns.com" | Select SmtpClientAuthenticationDisabled
 ```
 
-Necesitarás configurar permisos de aplicación en Azure:
-1. `Sites.ReadWrite.All`
-2. `Files.ReadWrite.All`
+### Opción 3: Deshabilitar Security Defaults (No recomendado para producción)
 
-Por ahora estamos usando **almacenamiento local** en `/app/storage/` que funciona perfectamente.
+1. Ir a: https://portal.azure.com
+2. Azure Active Directory > Propiedades
+3. Administrar valores predeterminados de seguridad
+4. Deshabilitar "Security defaults"
+
+⚠️ **Advertencia:** Esta opción reduce la seguridad de toda la organización.
 
 ---
 
-## 🎯 Recomendaciones
+## Verificar que funciona
 
-1. **Para Producción**: Habilita SMTP Auth (Opción 1 o 2)
-2. **Para Máxima Seguridad**: Usa OAuth 2.0 (Opción 3)
-3. **Para SharePoint**: Configuramos permisos de Azure cuando tengas tiempo
+Después de realizar los cambios, espere 5-10 minutos y pruebe nuevamente desde el sistema.
 
-**¿Qué prefieres hacer?**
+Si el correo sigue sin funcionar, verifique:
+- Que la contraseña sea correcta
+- Que no haya políticas de acceso condicional bloqueando
+- Que el usuario tenga licencia de Exchange Online
+
+---
+
+## Credenciales SMTP Actuales
+
+```
+Servidor: smtp.office365.com
+Puerto: 587
+Usuario: th.system@academiajotuns.com
+```
+
+## Contacto
+Si necesita ayuda adicional, contacte al soporte de Microsoft 365 o al equipo de TI de la organización.
