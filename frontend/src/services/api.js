@@ -1,0 +1,125 @@
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = `${BACKEND_URL}/api`;
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Request interceptor to add token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth
+export const authAPI = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+  getMe: () => api.get('/auth/me')
+};
+
+// Users
+export const usersAPI = {
+  list: (role) => api.get('/users', { params: { role } }),
+  get: (id) => api.get(`/users/${id}`),
+  update: (id, data) => api.put(`/users/${id}`, data)
+};
+
+// Contracts
+export const contractsAPI = {
+  list: (params) => api.get('/contracts', { params }),
+  get: (id) => api.get(`/contracts/${id}`),
+  create: (data) => api.post('/contracts', data),
+  update: (id, data) => api.put(`/contracts/${id}`, data),
+  review: (id) => api.post(`/contracts/${id}/review`),
+  approve: (id) => api.post(`/contracts/${id}/approve`),
+  uploadSigned: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/contracts/${id}/upload-signed`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
+};
+
+// Documents
+export const documentsAPI = {
+  list: (params) => api.get('/documents', { params }),
+  upload: (documentType, file, expiryDate) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('document_type', documentType);
+    if (expiryDate) {
+      formData.append('expiry_date', expiryDate);
+    }
+    return api.post('/documents', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  review: (id, data) => api.put(`/documents/${id}/review`, data),
+  getExpiring: (days) => api.get('/documents/expiring', { params: { days } })
+};
+
+// Payments
+export const paymentsAPI = {
+  list: (params) => api.get('/payments', { params }),
+  create: (data) => api.post('/payments', data),
+  uploadBill: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/payments/${id}/upload-bill`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  confirm: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/payments/${id}/confirm`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
+};
+
+// Dashboard
+export const dashboardAPI = {
+  getStats: () => api.get('/dashboard/stats')
+};
+
+// Reports
+export const reportsAPI = {
+  contractsPending: () => api.get('/reports/contracts-pending'),
+  contractsActive: () => api.get('/reports/contracts-active'),
+  paymentsPending: () => api.get('/reports/payments-pending')
+};
+
+// Notifications
+export const notificationsAPI = {
+  list: (limit) => api.get('/notifications', { params: { limit } }),
+  markRead: (id) => api.put(`/notifications/${id}/read`)
+};
+
+export default api;
