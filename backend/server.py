@@ -1121,7 +1121,7 @@ async def health_check():
     return {"status": "healthy", "service": "SportsAdmin API"}
 
 @app.get("/api/files/download/{file_id}")
-async def download_file(file_id: str, current_user: User = Depends(get_current_user)):
+async def download_file(file_id: str, token: Optional[str] = None, current_user: User = Depends(get_current_user)):
     """Download file from storage"""
     from fastapi.responses import FileResponse
     
@@ -1133,4 +1133,39 @@ async def download_file(file_id: str, current_user: User = Depends(get_current_u
         path=file_path,
         filename=os.path.basename(file_path),
         media_type='application/octet-stream'
+    )
+
+@app.get("/api/files/view/{file_id}")
+async def view_file(file_id: str, token: str):
+    """View/download file using token in query parameter (for opening in new tab)"""
+    from fastapi.responses import FileResponse
+    
+    # Verify token
+    payload = auth_service.decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+    db = await get_database()
+    user_data = await db.users.find_one({"id": payload["sub"]})
+    if not user_data or not user_data.get("is_active"):
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+    
+    file_path = await storage_service.get_file_path(file_id)
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Determine media type based on extension
+    ext = os.path.splitext(file_path)[1].lower()
+    media_types = {
+        '.pdf': 'application/pdf',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+    }
+    media_type = media_types.get(ext, 'application/octet-stream')
+    
+    return FileResponse(
+        path=file_path,
+        filename=os.path.basename(file_path),
+        media_type=media_type
     )

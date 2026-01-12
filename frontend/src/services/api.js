@@ -107,7 +107,8 @@ export const paymentsAPI = {
     });
   },
   downloadFile: (fileId) => {
-    return `${process.env.REACT_APP_BACKEND_URL}/api/files/download/${fileId}`;
+    const token = localStorage.getItem('token');
+    return `${process.env.REACT_APP_BACKEND_URL}/api/files/view/${fileId}?token=${token}`;
   }
 };
 
