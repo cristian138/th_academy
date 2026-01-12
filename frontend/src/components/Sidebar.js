@@ -21,7 +21,6 @@ export const Sidebar = () => {
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['collaborator', 'accountant', 'admin', 'legal_rep', 'superadmin'] },
     { path: '/contracts', label: 'Contratos', icon: FileText, roles: ['collaborator', 'admin', 'legal_rep', 'superadmin'] },
     { path: '/collaborators', label: 'Colaboradores', icon: Users, roles: ['admin', 'legal_rep', 'superadmin'] },
-    { path: '/documents', label: 'Documentos', icon: Upload, roles: ['collaborator', 'admin', 'superadmin'] },
     { path: '/payments', label: 'Pagos', icon: DollarSign, roles: ['collaborator', 'accountant', 'superadmin'] },
     { path: '/reports', label: 'Reportes', icon: BarChart3, roles: ['accountant', 'admin', 'legal_rep', 'superadmin'] },
     { path: '/users', label: 'Usuarios', icon: Settings, roles: ['admin', 'superadmin'] }
