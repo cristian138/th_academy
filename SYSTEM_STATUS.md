@@ -42,13 +42,17 @@
 - ✅ Notas de revisión del administrador
 - ✅ Links para visualizar documentos
 
-#### 6. **Pagos** (/payments)
+#### 8. **Pagos** (/payments)
 - ✅ Lista de pagos por colaborador/contador
+- ✅ **NUEVO**: Botón "Registrar Pago" (solo para contadores)
+- ✅ **NUEVO**: Modal de creación de pagos con formulario completo
+- ✅ **NUEVO**: Selector de contratos activos
 - ✅ Estados: Pendiente cuenta de cobro, Pendiente pago, Pagado
 - ✅ Carga de cuenta de cobro (colaborador)
 - ✅ Confirmación de pago con comprobante (contador)
 - ✅ Descarga de comprobantes
 - ✅ Información detallada: monto, fecha, descripción
+- ✅ Notificación automática al colaborador al crear pago
 
 #### 7. **Reportes** (/reports)
 - ✅ 3 tabs funcionales:
