@@ -96,12 +96,18 @@ export const paymentsAPI = {
     });
   },
   approve: (id) => api.post(`/payments/${id}/approve`),
+  reject: (id, reason) => api.post(`/payments/${id}/reject`, null, {
+    params: { rejection_reason: reason }
+  }),
   confirm: (id, file) => {
     const formData = new FormData();
     formData.append('file', file);
     return api.post(`/payments/${id}/confirm`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
+  },
+  downloadFile: (fileId) => {
+    return `${process.env.REACT_APP_BACKEND_URL}/api/files/download/${fileId}`;
   }
 };
 
