@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { Sidebar } from './Sidebar';
-import { Bell } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { notificationsAPI } from '../services/api';
 import {
   Popover,
@@ -13,6 +14,7 @@ export const DashboardLayout = ({ children }) => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const loadNotifications = async () => {
     try {
@@ -28,17 +30,45 @@ export const DashboardLayout = ({ children }) => {
     loadNotifications();
   }, []);
 
+  // Close sidebar when window resizes to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-brand-bg">
-      <Sidebar />
-      <div className="flex-1 ml-72">
-        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/50">
-          <div className="px-8 py-4 flex items-center justify-between">
-            <div>
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      
+      {/* Main content area - responsive margin */}
+      <div className="flex-1 lg:ml-72 w-full">
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200/50">
+          <div className="px-4 lg:px-8 py-4 flex items-center justify-between">
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 -ml-2 hover:bg-slate-100 rounded-sm transition-colors lg:hidden"
+              data-testid="mobile-menu-button"
+            >
+              <Menu size={24} className="text-brand-navy" />
+            </button>
+            
+            <div className="hidden sm:block">
               <h2 className="text-lg font-semibold text-brand-navy">Bienvenido, {user.name}</h2>
               <p className="text-sm text-slate-500">Gestione sus contratos y documentos</p>
             </div>
-            <div className="flex items-center gap-4">
+            
+            {/* Mobile: Show user name */}
+            <div className="sm:hidden flex-1 ml-2">
+              <h2 className="text-base font-semibold text-brand-navy truncate">{user.name}</h2>
+            </div>
+            
+            <div className="flex items-center gap-2 lg:gap-4">
               <Popover>
                 <PopoverTrigger asChild>
                   <button data-testid="notifications-button" className="relative p-2 hover:bg-slate-100 rounded-sm transition-colors">
@@ -74,7 +104,7 @@ export const DashboardLayout = ({ children }) => {
             </div>
           </div>
         </header>
-        <main className="p-8">{children}</main>
+        <main className="p-4 lg:p-8">{children}</main>
       </div>
     </div>
   );
