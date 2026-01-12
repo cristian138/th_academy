@@ -309,35 +309,104 @@ async def create_user(
     
     # Send welcome email (non-blocking)
     try:
+        email_body = f'''<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f4f4f4;">
+        <tr>
+            <td align="center" style="padding:20px 0;">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color:#002d54;padding:30px 40px;text-align:center;">
+                            <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:bold;">Sistema de Talento Humano</h1>
+                            <p style="color:#a0c4e8;margin:8px 0 0 0;font-size:14px;">Academia Jotuns Club SAS</p>
+                        </td>
+                    </tr>
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding:40px;">
+                            <h2 style="color:#002d54;margin:0 0 20px 0;font-size:22px;">¡Bienvenido(a) {user_create.name}!</h2>
+                            <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+                                Se ha creado su cuenta en el Sistema de Talento Humano de la Academia Jotuns Club.
+                            </p>
+                            
+                            <!-- Credentials Box -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f8f9fa;border:2px solid #002d54;border-radius:8px;margin:25px 0;">
+                                <tr>
+                                    <td style="padding:25px;">
+                                        <h3 style="color:#002d54;margin:0 0 20px 0;font-size:18px;">🔐 Sus credenciales de acceso:</h3>
+                                        <table role="presentation" cellspacing="0" cellpadding="8" border="0">
+                                            <tr>
+                                                <td style="color:#666666;font-size:14px;font-weight:bold;padding-right:15px;">URL:</td>
+                                                <td><a href="https://th.academiajotuns.com" style="color:#002d54;font-size:14px;font-weight:bold;text-decoration:none;">https://th.academiajotuns.com</a></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color:#666666;font-size:14px;font-weight:bold;padding-right:15px;">Correo:</td>
+                                                <td style="color:#333333;font-size:14px;">{user_create.email}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color:#666666;font-size:14px;font-weight:bold;padding-right:15px;">Contraseña:</td>
+                                                <td style="color:#333333;font-size:14px;font-family:monospace;background-color:#ffffff;padding:5px 10px;border-radius:4px;">{user_create.password}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Button -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:30px 0;">
+                                <tr>
+                                    <td style="background-color:#002d54;border-radius:6px;">
+                                        <a href="https://th.academiajotuns.com" style="display:inline-block;padding:15px 35px;color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;">Ingresar al Sistema</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Warning -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#fff3cd;border-left:4px solid #ffc107;border-radius:4px;margin:25px 0;">
+                                <tr>
+                                    <td style="padding:15px 20px;">
+                                        <p style="color:#856404;font-size:14px;margin:0;">
+                                            <strong>⚠️ Importante:</strong> Por seguridad, le recomendamos cambiar su contraseña después del primer inicio de sesión.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p style="color:#666666;font-size:14px;line-height:1.6;margin:25px 0 0 0;">
+                                Saludos cordiales,<br>
+                                <strong style="color:#002d54;">Sistema de Talento Humano</strong><br>
+                                Academia Jotuns Club SAS
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color:#002d54;padding:20px 40px;text-align:center;">
+                            <p style="color:#a0c4e8;font-size:12px;margin:0;">
+                                © 2026 Academia Jotuns Club SAS - Todos los derechos reservados
+                            </p>
+                            <p style="color:#6a9bc3;font-size:11px;margin:10px 0 0 0;">
+                                Este correo fue enviado automáticamente, por favor no responda a este mensaje.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>'''
+        
         email_sent = await email_service.send_email(
             recipient_email=user_create.email,
-            subject="Bienvenido al Sistema de Talento Humano - Academia Jotuns Club",
-            body=f"""
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <div style="background-color: #002d54; padding: 20px; text-align: center;">
-                    <h1 style="color: white; margin: 0;">Sistema de Talento Humano</h1>
-                    <p style="color: #ccc; margin: 5px 0 0 0;">Academia Jotuns Club SAS</p>
-                </div>
-                <div style="padding: 30px; background-color: #f9f9f9;">
-                    <h2 style="color: #002d54;">¡Bienvenido(a) {user_create.name}!</h2>
-                    <p>Se ha creado su cuenta en el Sistema de Talento Humano.</p>
-                    
-                    <div style="background-color: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; margin: 20px 0;">
-                        <h3 style="color: #002d54; margin-top: 0;">Sus credenciales de acceso:</h3>
-                        <p><strong>URL:</strong> <a href="https://th.academiajotuns.com">https://th.academiajotuns.com</a></p>
-                        <p><strong>Correo:</strong> {user_create.email}</p>
-                        <p><strong>Contraseña:</strong> {user_create.password}</p>
-                    </div>
-                    
-                    <p style="color: #e74c3c;"><strong>⚠️ Importante:</strong> Por seguridad, cambie su contraseña después del primer inicio de sesión.</p>
-                    
-                    <p style="color: #666;">Saludos cordiales,<br><strong>Sistema de Talento Humano</strong></p>
-                </div>
-                <div style="background-color: #002d54; padding: 10px; text-align: center;">
-                    <p style="color: #888; font-size: 12px; margin: 0;">Academia Jotuns Club SAS - Todos los derechos reservados</p>
-                </div>
-            </div>
-            """
+            subject="🎉 Bienvenido al Sistema de Talento Humano - Academia Jotuns Club",
+            body=email_body
         )
         if email_sent:
             print(f"✓ Welcome email sent to {user_create.email}")
