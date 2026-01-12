@@ -90,17 +90,14 @@ Sistema administrativo para una academia deportiva para gestionar la contrataci�
 
 ### Pendientes (Backlog)
 
-#### P1 - Alta Prioridad
-- **Habilitar SMTP:** El usuario debe habilitar autenticación SMTP en Microsoft 365 siguiendo `/app/HABILITAR_SMTP.md`
-
 #### P2 - Media Prioridad
 - **Migración a SharePoint/OneDrive:** Opcional si se resuelven permisos de API
 - **Refactorización de server.py:** Dividir en módulos (routes/contracts.py, routes/payments.py, etc.)
 
 #### P3 - Baja Prioridad
-- Exportación de reportes a Excel/PDF
 - Dashboard con gráficos avanzados
 - Notificaciones push
+- Exportación de reportes a PDF
 
 ---
 
