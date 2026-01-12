@@ -21,7 +21,7 @@ const getStatusBadge = (status) => {
     completed: { label: 'Completado', class: 'bg-slate-100 text-slate-700 border-slate-200' },
     cancelled: { label: 'Cancelado', class: 'bg-red-100 text-red-700 border-red-200' }
   };
-  const status Info = statusMap[status] || { label: status, class: 'bg-slate-100 text-slate-700' };
+  const statusInfo = statusMap[status] || { label: status, class: 'bg-slate-100 text-slate-700' };
   return (
     <Badge className={`${statusInfo.class} px-2.5 py-0.5 rounded-full text-xs font-bold uppercase border`}>
       {statusInfo.label}
