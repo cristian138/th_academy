@@ -40,14 +40,18 @@ export const ContractDetailPage = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [file, setFile] = useState(null);
 
-  useEffect(() => {
-    loadContract();
-  }, [id]);
-
   const loadContract = async () => {
     try {
       const response = await contractsAPI.get(id);
       setContract(response.data);
+    } catch (error) {
+      console.error('Error loading contract:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadContract();
+  }, [id]);
     } catch (error) {
       console.error('Error loading contract:', error);
       toast.error('Error al cargar el contrato');
