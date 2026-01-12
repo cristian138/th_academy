@@ -107,16 +107,6 @@ export const LoginPage = () => {
               {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </Button>
           </form>
-
-          <div className="mt-6 p-4 bg-slate-50 rounded-sm border border-slate-200">
-            <p className="text-xs uppercase text-slate-500 font-bold mb-2">Usuarios de Prueba</p>
-            <div className="space-y-1 text-xs text-slate-600">
-              <p>Admin: admin@sportsadmin.com / admin123</p>
-              <p>Legal: legal@sportsadmin.com / legal123</p>
-              <p>Contador: contador@sportsadmin.com / contador123</p>
-              <p>Colaborador: carlos.rodriguez@coach.com / carlos123</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
