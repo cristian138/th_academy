@@ -354,12 +354,24 @@ export const PaymentsPage = () => {
                     </div>
                   </div>
 
-                  {/* Colaborador - Cargar cuenta de cobro (status: draft) */}
-                  {payment.status === 'draft' && user.role === 'collaborator' && (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm">
-                      <p className="text-sm font-medium text-amber-900 mb-3 flex items-center gap-2">
-                        <AlertCircle size={18} />
-                        Por favor cargue su cuenta de cobro en PDF
+                  {/* Colaborador - Cargar cuenta de cobro (status: draft o rejected) */}
+                  {(payment.status === 'draft' || payment.status === 'rejected') && user.role === 'collaborator' && (
+                    <div className={`p-4 border rounded-sm ${
+                      payment.status === 'rejected' 
+                        ? 'bg-red-50 border-red-200' 
+                        : 'bg-amber-50 border-amber-200'
+                    }`}>
+                      {payment.status === 'rejected' && payment.rejection_reason && (
+                        <div className="mb-3 p-3 bg-red-100 border border-red-300 rounded-sm">
+                          <p className="text-xs uppercase text-red-700 font-bold mb-1">Motivo del Rechazo:</p>
+                          <p className="text-sm text-red-900">{payment.rejection_reason}</p>
+                        </div>
+                      )}
+                      <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                        <AlertCircle size={18} className={payment.status === 'rejected' ? 'text-red-700' : 'text-amber-700'} />
+                        {payment.status === 'rejected' 
+                          ? 'Por favor corrija y vuelva a cargar su cuenta de cobro' 
+                          : 'Por favor cargue su cuenta de cobro en PDF'}
                       </p>
                       <Input
                         type="file"
