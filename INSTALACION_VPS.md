@@ -89,7 +89,7 @@ sudo chown -R www-data:www-data /var/www/jotuns-th/storage
 **Opción A: Usando Git (recomendado)**
 ```bash
 cd /var/www/jotuns-th
-sudo -u www-data git clone https://github.com/SU_USUARIO/SU_REPOSITORIO.git .
+sudo -u www-data git clone https://github.com/cristian138/th_academy.git .
 ```
 
 **Opción B: Usando SCP desde su máquina local**
