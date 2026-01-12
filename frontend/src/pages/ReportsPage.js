@@ -3,8 +3,10 @@ import { DashboardLayout } from '../components/DashboardLayout';
 import { reportsAPI } from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, FileText, DollarSign } from 'lucide-react';
+import { BarChart3, FileText, DollarSign, Download } from 'lucide-react';
+import { toast } from 'sonner';
 
 const getStatusBadge = (status) => {
   const statusMap = {
