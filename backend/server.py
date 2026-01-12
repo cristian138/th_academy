@@ -502,7 +502,7 @@ async def upload_signed_contract(
     
     # Upload to OneDrive
     file_content = await file.read()
-    result = await onedrive_service.upload_file(
+    result = await storage_service.upload_file(
         file_content=file_content,
         file_name=f"contract_{contract_id}_{file.filename}",
         folder_path="SportsAdmin/Contracts"
@@ -544,7 +544,7 @@ async def upload_document(
     
     # Upload to OneDrive
     file_content = await file.read()
-    result = await onedrive_service.upload_file(
+    result = await storage_service.upload_file(
         file_content=file_content,
         file_name=f"{document_type.value}_{current_user.id}_{file.filename}",
         folder_path="SportsAdmin/Documents"
@@ -756,7 +756,7 @@ async def upload_bill(
     
     # Upload to OneDrive
     file_content = await file.read()
-    result = await onedrive_service.upload_file(
+    result = await storage_service.upload_file(
         file_content=file_content,
         file_name=f"bill_{payment_id}_{file.filename}",
         folder_path="SportsAdmin/Bills"
@@ -874,7 +874,7 @@ async def confirm_payment(
     
     # Upload voucher to OneDrive
     file_content = await file.read()
-    result = await onedrive_service.upload_file(
+    result = await storage_service.upload_file(
         file_content=file_content,
         file_name=f"voucher_{payment_id}_{file.filename}",
         folder_path="SportsAdmin/Vouchers"
