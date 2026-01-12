@@ -76,22 +76,22 @@ export const contractsAPI = {
   }
 };
 
-// Documents
+// Documents (associated to contracts)
 export const documentsAPI = {
-  list: (params) => api.get('/documents', { params }),
-  upload: (documentType, file, expiryDate) => {
+  getContractDocuments: (contractId) => api.get(`/contracts/${contractId}/documents`),
+  uploadContractDocument: (contractId, documentType, file) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('document_type', documentType);
-    if (expiryDate) {
-      formData.append('expiry_date', expiryDate);
-    }
-    return api.post('/documents', formData, {
+    return api.post(`/contracts/${contractId}/documents?document_type=${documentType}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
   review: (id, data) => api.put(`/documents/${id}/review`, data),
-  getExpiring: (days) => api.get('/documents/expiring', { params: { days } })
+  getExpiring: (days) => api.get('/documents/expiring', { params: { days } }),
+  downloadFile: (fileId) => {
+    const token = localStorage.getItem('token');
+    return `${process.env.REACT_APP_BACKEND_URL}/api/files/view/${fileId}?token=${token}`;
+  }
 };
 
 // Payments
