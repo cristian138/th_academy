@@ -47,6 +47,13 @@ Sistema administrativo para una academia deportiva para gestionar la contrataci�
 - Revisión y aprobación de documentos
 - Alertas de documentos por vencer
 
+#### ✅ Gestión de Documentos (asociados a contratos)
+- Documentos obligatorios: Cédula, RUT, Certificación Bancaria, Antecedentes
+- Documentos opcionales: Certificado Laboral, Certificado Educativo, Licencia
+- Colaborador carga documentos en el contrato
+- Admin revisa y aprueba/rechaza cada documento
+- Contrato solo puede avanzar cuando todos los documentos obligatorios están aprobados
+
 #### ✅ Flujo de Pagos (Cuentas de Cobro)
 - **Colaborador:** Crear cuenta de cobro, subir PDF
 - **Contador:** Ver PDF, aprobar o rechazar cuentas de cobro
@@ -121,8 +128,9 @@ Sistema administrativo para una academia deportiva para gestionar la contrataci�
 
 ### Última Actualización
 **Fecha:** 12 de Enero, 2026
-**Versión:** 1.1.0
+**Versión:** 1.2.0
 **Últimos cambios:** 
-- Corregido bug de visualización de PDFs (autenticación)
-- Agregada exportación de reportes a Excel
-- SMTP habilitado por el usuario
+- Documentos ahora asociados a contratos (no a colaboradores)
+- Flujo de aprobación de documentos antes de aprobar contrato
+- Eliminadas credenciales de prueba del login
+- Guía de instalación para VPS
