@@ -14,10 +14,6 @@ export const DashboardLayout = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    loadNotifications();
-  }, []);
-
   const loadNotifications = async () => {
     try {
       const response = await notificationsAPI.list(10);
@@ -27,6 +23,10 @@ export const DashboardLayout = ({ children }) => {
       console.error('Error loading notifications:', error);
     }
   };
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-brand-bg">
