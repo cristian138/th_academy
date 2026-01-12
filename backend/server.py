@@ -307,22 +307,25 @@ async def create_user(
     
     await db.users.insert_one(user_dict)
     
-    # Send welcome email
-    await email_service.send_email(
-        recipient_email=user_create.email,
-        subject="Bienvenido al Sistema de Talento Humano - Jotuns Club",
-        body=f"""
-        <h2>Bienvenido(a) {user_create.name}</h2>
-        <p>Se ha creado su cuenta en el Sistema de Talento Humano de la Academia Jotuns Club.</p>
-        <p><strong>Sus credenciales de acceso:</strong></p>
-        <ul>
-            <li>Correo: {user_create.email}</li>
-            <li>Contraseña: {user_create.password}</li>
-        </ul>
-        <p>Por favor cambie su contraseña después del primer inicio de sesión.</p>
-        <p>Saludos cordiales,<br>Sistema de Talento Humano</p>
-        """
-    )
+    # Send welcome email (non-blocking)
+    try:
+        await email_service.send_email(
+            recipient_email=user_create.email,
+            subject="Bienvenido al Sistema de Talento Humano - Jotuns Club",
+            body=f"""
+            <h2>Bienvenido(a) {user_create.name}</h2>
+            <p>Se ha creado su cuenta en el Sistema de Talento Humano de la Academia Jotuns Club.</p>
+            <p><strong>Sus credenciales de acceso:</strong></p>
+            <ul>
+                <li>Correo: {user_create.email}</li>
+                <li>Contraseña: {user_create.password}</li>
+            </ul>
+            <p>Por favor cambie su contraseña después del primer inicio de sesión.</p>
+            <p>Saludos cordiales,<br>Sistema de Talento Humano</p>
+            """
+        )
+    except Exception as e:
+        print(f"Error sending welcome email: {e}")
     
     await audit_service.log(
         user_id=current_user.id,
@@ -332,9 +335,18 @@ async def create_user(
         details={"email": user_create.email, "role": user_create.role}
     )
     
-    # Return user without password
-    user_dict.pop("hashed_password")
-    return user_dict
+    # Return user without password and _id (MongoDB adds _id to the dict)
+    return {
+        "id": user_dict["id"],
+        "email": user_dict["email"],
+        "name": user_dict["name"],
+        "role": user_dict["role"],
+        "phone": user_dict.get("phone"),
+        "identification": user_dict.get("identification"),
+        "is_active": user_dict["is_active"],
+        "created_at": user_dict["created_at"].isoformat(),
+        "updated_at": user_dict["updated_at"].isoformat()
+    }
 
 # ============= CONTRACT ROUTES =============
 
