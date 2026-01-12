@@ -53,6 +53,9 @@ export const PaymentsPage = () => {
   const [creating, setCreating] = useState(false);
   const [approvingPayment, setApprovingPayment] = useState(null);
   const [confirmingPayment, setConfirmingPayment] = useState(null);
+  const [rejectingPayment, setRejectingPayment] = useState(null);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
   
   // Form state for creating payment (cuenta de cobro)
   const [formData, setFormData] = useState({
