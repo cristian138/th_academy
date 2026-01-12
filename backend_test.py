@@ -314,6 +314,22 @@ class SportsAdminAPITester:
             self.test_list_contracts()
             self.test_notifications()
         
+        # Test with contador (accountant)
+        if login_results.get("contador"):
+            self.current_user = "contador"
+            print(f"\n💰 Testing as Accountant (Contador)...")
+            
+            self.test_get_me()
+            self.test_dashboard_stats()
+            self.test_list_contracts()
+            self.test_list_payments()
+            self.test_notifications()
+        
+        # Test payment workflow if contador login worked
+        if login_results.get("contador"):
+            self.current_user = "contador"
+            self.test_payment_workflow()
+        
         # Test with collaborator
         if login_results.get("collaborator"):
             self.current_user = "collaborator"
