@@ -676,45 +676,31 @@ async def get_expiring_documents(
 @app.post("/api/payments", response_model=Payment, status_code=status.HTTP_201_CREATED)
 async def create_payment(
     payment_create: PaymentCreate,
-    current_user: User = Depends(require_role(UserRole.ACCOUNTANT))
+    current_user: User = Depends(get_current_user)
 ):
-    """Create payment record (accountant only)"""
+    """Create payment record (collaborator creates cuenta de cobro)"""
     db = await get_database()
     
-    # Verify contract exists
+    # Verify contract exists and belongs to collaborator
     contract = await db.contracts.find_one({"id": payment_create.contract_id})
     if not contract:
         raise HTTPException(status_code=404, detail="Contract not found")
+    
+    # Check if collaborator owns the contract
+    if current_user.role == UserRole.COLLABORATOR and contract["collaborator_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
     
     # Create payment
     payment_dict = payment_create.model_dump()
     payment_dict.update({
         "id": str(uuid.uuid4()),
-        "status": PaymentStatus.PENDING_BILL,
+        "status": PaymentStatus.DRAFT,
         "created_by": current_user.id,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc)
     })
     
     await db.payments.insert_one(payment_dict)
-    
-    # Notify collaborator
-    collaborator = await db.users.find_one({"id": contract["collaborator_id"]})
-    await db.notifications.insert_one({
-        "user_id": contract["collaborator_id"],
-        "title": "Nuevo Pago Registrado",
-        "message": f"Se ha registrado un pago de ${payment_create.amount}. Por favor cargue su cuenta de cobro.",
-        "notification_type": "payment_created",
-        "read": False,
-        "created_at": datetime.now(timezone.utc)
-    })
-    
-    # Send email
-    await email_service.send_email(
-        recipient_email=collaborator["email"],
-        subject="Nuevo Pago Registrado - SportsAdmin",
-        body=f"<h2>Nuevo Pago</h2><p>Se ha registrado un pago de <strong>${payment_create.amount}</strong>.</p><p>Por favor cargue su cuenta de cobro en el sistema.</p>"
-    )
     
     await audit_service.log(
         user_id=current_user.id,
