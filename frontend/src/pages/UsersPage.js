@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { useAuth } from '../context/AuthContext';
 import { usersAPI } from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -43,14 +44,8 @@ const getRoleBadge = (role) => {
   );
 };
 
-const roleOptions = [
-  { value: 'collaborator', label: 'Colaborador' },
-  { value: 'accountant', label: 'Contador' },
-  { value: 'admin', label: 'Administrador' },
-  { value: 'legal_rep', label: 'Representante Legal' }
-];
-
 export const UsersPage = () => {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -66,6 +61,17 @@ export const UsersPage = () => {
     identification: ''
   });
   const [actionLoading, setActionLoading] = useState(false);
+
+  const isSuperAdmin = currentUser?.role === 'superadmin';
+
+  // Role options - superadmin option only if current user is superadmin
+  const roleOptions = [
+    { value: 'collaborator', label: 'Colaborador' },
+    { value: 'accountant', label: 'Contador' },
+    { value: 'admin', label: 'Administrador' },
+    { value: 'legal_rep', label: 'Representante Legal' },
+    ...(isSuperAdmin ? [{ value: 'superadmin', label: 'Superadministrador' }] : [])
+  ];
 
   useEffect(() => {
     loadUsers();
