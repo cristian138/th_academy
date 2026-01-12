@@ -356,28 +356,56 @@ export const PaymentsPage = () => {
                     </div>
                   )}
 
-                  {/* Pendiente aprobación */}
+                  {/* Pendiente aprobación - Contador puede ver, aprobar o rechazar */}
                   {payment.status === 'pending_approval' && (
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Clock size={18} className="text-blue-700" />
-                          <p className="text-sm font-medium text-blue-900">
-                            Cuenta de cobro en revisión
-                          </p>
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Clock size={18} className="text-blue-700" />
+                        <p className="text-sm font-medium text-blue-900">
+                          Cuenta de cobro en revisión
+                        </p>
+                      </div>
+                      
+                      {payment.bill_file_id && (
+                        <div className="pt-2">
+                          <a
+                            href={paymentsAPI.downloadFile(payment.bill_file_id)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-sm hover:bg-blue-50 transition-colors text-sm font-medium"
+                          >
+                            <FileText size={16} />
+                            Ver Cuenta de Cobro (PDF)
+                          </a>
                         </div>
-                        {hasRole('accountant') && (
+                      )}
+                      
+                      {hasRole('accountant') && (
+                        <div className="flex gap-2 pt-2">
                           <Button
                             onClick={() => handleApprovePayment(payment.id)}
                             disabled={approvingPayment === payment.id}
                             size="sm"
                             data-testid={`approve-payment-${payment.id}`}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm"
+                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm"
                           >
-                            {approvingPayment === payment.id ? 'Aprobando...' : 'Aprobar'}
+                            {approvingPayment === payment.id ? 'Aprobando...' : '✓ Aprobar'}
                           </Button>
-                        )}
-                      </div>
+                          <Button
+                            onClick={() => {
+                              setRejectingPayment(payment.id);
+                              setShowRejectDialog(true);
+                            }}
+                            disabled={approvingPayment === payment.id}
+                            size="sm"
+                            variant="outline"
+                            data-testid={`reject-payment-${payment.id}`}
+                            className="flex-1 border-red-300 text-red-700 hover:bg-red-50 rounded-sm"
+                          >
+                            ✗ Rechazar
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
 
