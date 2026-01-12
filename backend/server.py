@@ -948,7 +948,7 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         
         pending_payments = await db.payments.count_documents({
             "contract_id": {"$in": contract_ids},
-            "status": {"$in": [PaymentStatus.PENDING_BILL, PaymentStatus.PENDING_PAYMENT]}
+            "status": {"$in": [PaymentStatus.DRAFT, PaymentStatus.PENDING_APPROVAL, PaymentStatus.APPROVED]}
         })
         
         return DashboardStats(
