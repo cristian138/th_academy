@@ -143,13 +143,15 @@ REQUIRED_DOCUMENTS = [
     DocumentType.CEDULA,
     DocumentType.RUT,
     DocumentType.CERT_BANCARIA,
-    DocumentType.ANTECEDENTES
+    DocumentType.ANTECEDENTES,
+    DocumentType.HOJA_VIDA,
+    DocumentType.PROPUESTA_TRABAJO
 ]
 
 OPTIONAL_DOCUMENTS = [
-    DocumentType.CERT_LABORAL,
-    DocumentType.CERT_EDUCATIVA,
-    DocumentType.LICENCIA
+    DocumentType.SOPORTES_LABORALES,
+    DocumentType.SOPORTES_EDUCATIVOS,
+    DocumentType.TARJETA_ENTRENADOR
 ]
 
 # Payment Models
