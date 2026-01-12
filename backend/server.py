@@ -13,7 +13,7 @@ from models import (
 )
 from services.auth_service import auth_service
 from services.email_service import email_service
-from services.onedrive_service import onedrive_service
+from services.storage_service import storage_service
 from services.audit_service import audit_service
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
