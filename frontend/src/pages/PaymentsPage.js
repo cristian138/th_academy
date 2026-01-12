@@ -149,6 +149,24 @@ export const PaymentsPage = () => {
     }
   };
 
+  const handleRejectPayment = async () => {
+    if (!rejectionReason.trim()) {
+      toast.error('Por favor ingrese el motivo del rechazo');
+      return;
+    }
+
+    try {
+      await paymentsAPI.reject(rejectingPayment, rejectionReason);
+      toast.success('Cuenta de cobro rechazada');
+      setShowRejectDialog(false);
+      setRejectionReason('');
+      setRejectingPayment(null);
+      loadPayments();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al rechazar cuenta de cobro');
+    }
+  };
+
   const handleConfirmPayment = async (paymentId, file) => {
     setConfirmingPayment(paymentId);
     try {
