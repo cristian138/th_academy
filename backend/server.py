@@ -445,9 +445,10 @@ async def review_contract(
 @app.post("/api/contracts/{contract_id}/approve")
 async def approve_contract(
     contract_id: str,
+    file: UploadFile = File(...),
     current_user: User = Depends(require_role(UserRole.LEGAL_REP))
 ):
-    """Approve contract"""
+    """Approve contract and upload the contract document for signing"""
     db = await get_database()
     
     contract = await db.contracts.find_one({"id": contract_id})
@@ -457,12 +458,24 @@ async def approve_contract(
     if contract["status"] != ContractStatus.PENDING_APPROVAL:
         raise HTTPException(status_code=400, detail="Contract is not pending approval")
     
+    # Upload contract document
+    file_content = await file.read()
+    result = await storage_service.upload_file(
+        file_content=file_content,
+        file_name=f"contract_original_{contract_id}_{file.filename}",
+        folder_path="SportsAdmin/Contracts"
+    )
+    
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to upload contract document")
+    
     # Update status
     await db.contracts.update_one(
         {"id": contract_id},
         {"$set": {
             "status": ContractStatus.APPROVED,
             "approved_by": current_user.id,
+            "contract_file_id": result["id"],
             "updated_at": datetime.now(timezone.utc)
         }}
     )
