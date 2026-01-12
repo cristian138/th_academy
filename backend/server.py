@@ -742,7 +742,7 @@ async def upload_bill(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user)
 ):
-    """Upload payment bill (collaborator only)"""
+    """Upload payment bill (cuenta de cobro) - collaborator submits for approval"""
     db = await get_database()
     
     payment = await db.payments.find_one({"id": payment_id})
@@ -765,15 +765,34 @@ async def upload_bill(
     if not result:
         raise HTTPException(status_code=500, detail="Failed to upload file")
     
-    # Update payment
+    # Update payment - move to pending approval
     await db.payments.update_one(
         {"id": payment_id},
         {"$set": {
-            "status": PaymentStatus.PENDING_PAYMENT,
+            "status": PaymentStatus.PENDING_APPROVAL,
             "bill_file_id": result["id"],
             "updated_at": datetime.now(timezone.utc)
         }}
     )
+    
+    # Notify accountants
+    accountants = await db.users.find({"role": UserRole.ACCOUNTANT}).to_list(100)
+    for accountant in accountants:
+        await db.notifications.insert_one({
+            "user_id": accountant["id"],
+            "title": "Nueva Cuenta de Cobro",
+            "message": f"Cuenta de cobro por ${payment['amount']} requiere aprobación",
+            "notification_type": "payment_approval_needed",
+            "read": False,
+            "created_at": datetime.now(timezone.utc)
+        })
+        
+        # Send email
+        await email_service.send_email(
+            recipient_email=accountant["email"],
+            subject="Nueva Cuenta de Cobro - Jotuns Club",
+            body=f"<h2>Cuenta de Cobro Pendiente</h2><p>Una cuenta de cobro por <strong>${payment['amount']}</strong> requiere su aprobación.</p>"
+        )
     
     await audit_service.log(
         user_id=current_user.id,
@@ -782,7 +801,60 @@ async def upload_bill(
         resource_id=payment_id
     )
     
-    return {"message": "Bill uploaded successfully", "file_id": result["id"]}
+    return {"message": "Cuenta de cobro cargada exitosamente", "file_id": result["id"]}
+
+@app.post("/api/payments/{payment_id}/approve")
+async def approve_payment(
+    payment_id: str,
+    current_user: User = Depends(require_role(UserRole.ACCOUNTANT))
+):
+    """Approve payment - accountant approves cuenta de cobro"""
+    db = await get_database()
+    
+    payment = await db.payments.find_one({"id": payment_id})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    if payment["status"] != PaymentStatus.PENDING_APPROVAL:
+        raise HTTPException(status_code=400, detail="Payment is not pending approval")
+    
+    # Update payment to approved
+    await db.payments.update_one(
+        {"id": payment_id},
+        {"$set": {
+            "status": PaymentStatus.APPROVED,
+            "approved_by": current_user.id,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    # Notify collaborator
+    contract = await db.contracts.find_one({"id": payment["contract_id"]})
+    collaborator = await db.users.find_one({"id": contract["collaborador_id"]})
+    
+    await db.notifications.insert_one({
+        "user_id": contract["collaborator_id"],
+        "title": "Cuenta de Cobro Aprobada",
+        "message": f"Su cuenta de cobro por ${payment['amount']} ha sido aprobada",
+        "notification_type": "payment_approved",
+        "read": False,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    await email_service.send_email(
+        recipient_email=collaborator["email"],
+        subject="Cuenta de Cobro Aprobada - Jotuns Club",
+        body=f"<h2>Cuenta de Cobro Aprobada</h2><p>Su cuenta de cobro por <strong>${payment['amount']}</strong> ha sido aprobada.</p>"
+    )
+    
+    await audit_service.log(
+        user_id=current_user.id,
+        action="approve_payment",
+        resource_type="payment",
+        resource_id=payment_id
+    )
+    
+    return {"message": "Payment approved successfully"}
 
 @app.post("/api/payments/{payment_id}/confirm")
 async def confirm_payment(
