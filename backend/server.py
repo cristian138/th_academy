@@ -831,7 +831,7 @@ async def approve_payment(
     
     # Notify collaborator
     contract = await db.contracts.find_one({"id": payment["contract_id"]})
-    collaborator = await db.users.find_one({"id": contract["collaborador_id"]})
+    collaborator = await db.users.find_one({"id": contract["collaborator_id"]})
     
     await db.notifications.insert_one({
         "user_id": contract["collaborator_id"],
