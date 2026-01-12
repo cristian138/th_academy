@@ -5,6 +5,12 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ContractsPage } from './pages/ContractsPage';
 import { ContractDetailPage } from './pages/ContractDetailPage';
+import { NewContractPage } from './pages/NewContractPage';
+import { CollaboratorsPage } from './pages/CollaboratorsPage';
+import { DocumentsPage } from './pages/DocumentsPage';
+import { PaymentsPage } from './pages/PaymentsPage';
+import { ReportsPage } from './pages/ReportsPage';
+import { UsersPage } from './pages/UsersPage';
 import { Toaster } from '@/components/ui/sonner';
 import './App.css';
 
@@ -31,10 +37,58 @@ function App() {
             }
           />
           <Route
+            path="/contracts/new"
+            element={
+              <ProtectedRoute requiredRole="legal_rep">
+                <NewContractPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/contracts/:id"
             element={
               <ProtectedRoute>
                 <ContractDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/collaborators"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <CollaboratorsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/documents"
+            element={
+              <ProtectedRoute>
+                <DocumentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payments"
+            element={
+              <ProtectedRoute>
+                <PaymentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute requiredRole="accountant">
+                <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <UsersPage />
               </ProtectedRoute>
             }
           />
