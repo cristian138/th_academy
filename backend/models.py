@@ -31,7 +31,7 @@ class DocumentType(str, Enum):
     RUT = "rut"
     CERT_LABORAL = "cert_laboral"
     CERT_EDUCATIVA = "cert_educativa"
-    CUENTA_BANCARIA = "cuenta_bancaria"
+    CERT_BANCARIA = "cert_bancaria"
     ANTECEDENTES = "antecedentes"
     LICENCIA = "licencia"
 
