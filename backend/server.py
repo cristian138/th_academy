@@ -857,6 +857,62 @@ async def approve_payment(
     
     return {"message": "Payment approved successfully"}
 
+@app.post("/api/payments/{payment_id}/reject")
+async def reject_payment(
+    payment_id: str,
+    rejection_reason: str,
+    current_user: User = Depends(require_role(UserRole.ACCOUNTANT))
+):
+    """Reject payment - accountant rejects cuenta de cobro with reason"""
+    db = await get_database()
+    
+    payment = await db.payments.find_one({"id": payment_id})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    if payment["status"] != PaymentStatus.PENDING_APPROVAL:
+        raise HTTPException(status_code=400, detail="Payment is not pending approval")
+    
+    # Update payment to rejected with reason
+    await db.payments.update_one(
+        {"id": payment_id},
+        {"$set": {
+            "status": PaymentStatus.REJECTED,
+            "rejection_reason": rejection_reason,
+            "rejected_by": current_user.id,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    # Notify collaborator
+    contract = await db.contracts.find_one({"id": payment["contract_id"]})
+    collaborator = await db.users.find_one({"id": contract["collaborator_id"]})
+    
+    await db.notifications.insert_one({
+        "user_id": contract["collaborator_id"],
+        "title": "Cuenta de Cobro Rechazada",
+        "message": f"Su cuenta de cobro por ${payment['amount']} fue rechazada. Motivo: {rejection_reason}",
+        "notification_type": "payment_rejected",
+        "read": False,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    await email_service.send_email(
+        recipient_email=collaborator["email"],
+        subject="Cuenta de Cobro Rechazada - Jotuns Club",
+        body=f"<h2>Cuenta de Cobro Rechazada</h2><p>Su cuenta de cobro por <strong>${payment['amount']}</strong> fue rechazada.</p><p><strong>Motivo:</strong> {rejection_reason}</p><p>Por favor corrija y vuelva a cargar la cuenta de cobro.</p>"
+    )
+    
+    await audit_service.log(
+        user_id=current_user.id,
+        action="reject_payment",
+        resource_type="payment",
+        resource_id=payment_id,
+        details={"reason": rejection_reason}
+    )
+    
+    return {"message": "Payment rejected successfully"}
+
 @app.post("/api/payments/{payment_id}/confirm")
 async def confirm_payment(
     payment_id: str,
