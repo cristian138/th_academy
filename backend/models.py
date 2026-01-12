@@ -157,6 +157,10 @@ class Payment(PaymentBase):
     created_by: str
     bill_file_id: Optional[str] = None
     voucher_file_id: Optional[str] = None
+    approved_by: Optional[str] = None
+    rejected_by: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    confirmed_by: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
