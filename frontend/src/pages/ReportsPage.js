@@ -69,9 +69,45 @@ export const ReportsPage = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold text-brand-navy mb-2">Reportes</h1>
-          <p className="text-slate-600">Visualice reportes y estadísticas del sistema</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-brand-navy mb-2">Reportes</h1>
+            <p className="text-slate-600">Visualice reportes y estadísticas del sistema</p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                try {
+                  reportsAPI.exportContracts();
+                  toast.success('Descargando reporte de contratos...');
+                } catch (error) {
+                  toast.error('Error al exportar contratos');
+                }
+              }}
+              variant="outline"
+              className="rounded-sm border-brand-navy text-brand-navy hover:bg-brand-navy/10"
+              data-testid="export-contracts-btn"
+            >
+              <Download size={16} className="mr-2" />
+              Exportar Contratos
+            </Button>
+            <Button
+              onClick={() => {
+                try {
+                  reportsAPI.exportPayments();
+                  toast.success('Descargando reporte de pagos...');
+                } catch (error) {
+                  toast.error('Error al exportar pagos');
+                }
+              }}
+              variant="outline"
+              className="rounded-sm border-brand-navy text-brand-navy hover:bg-brand-navy/10"
+              data-testid="export-payments-btn"
+            >
+              <Download size={16} className="mr-2" />
+              Exportar Pagos
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="pending" className="space-y-6">
