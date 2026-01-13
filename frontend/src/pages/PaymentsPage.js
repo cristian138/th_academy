@@ -485,15 +485,16 @@ export const PaymentsPage = () => {
                           <p className="text-sm font-medium text-emerald-900">Pago procesado exitosamente</p>
                         </div>
                         {payment.voucher_file_id && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-sm text-xs"
+                          <a
+                            href={paymentsAPI.downloadFile(payment.voucher_file_id)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-emerald-300 text-emerald-700 rounded-sm hover:bg-emerald-100 transition-colors text-xs font-medium"
                             data-testid={`download-voucher-${payment.id}`}
                           >
-                            <FileText size={14} className="mr-1" />
+                            <FileText size={14} />
                             Descargar Comprobante
-                          </Button>
+                          </a>
                         )}
                       </div>
                     </div>
