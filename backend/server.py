@@ -449,51 +449,14 @@ async def create_contract(
     # Verify collaborator exists
     collaborator = await db.users.find_one({"id": contract_create.collaborator_id, "role": UserRole.COLLABORATOR})
     if not collaborator:
-        raise HTTPException(status_code=404, detail="Collaborator not found")
+        raise HTTPException(status_code=404, detail="Colaborador no encontrado")
     
-    # Check if collaborator has all required documents
-    required_docs = [
-        DocumentType.CEDULA,
-        DocumentType.RUT,
-        DocumentType.CERT_LABORAL,
-        DocumentType.CERT_EDUCATIVA,
-        DocumentType.CUENTA_BANCARIA,
-        DocumentType.ANTECEDENTES
-    ]
-    
-    for doc_type in required_docs:
-        doc = await db.documents.find_one({
-            "user_id": contract_create.collaborator_id,
-            "document_type": doc_type,
-            "status": DocumentStatus.APPROVED
-        })
-        if not doc:
-            # Create notification for missing documents
-            await db.notifications.insert_one({
-                "user_id": contract_create.collaborator_id,
-                "title": "Documentos Pendientes",
-                "message": f"Por favor cargue el documento: {doc_type.value}",
-                "notification_type": "document_missing",
-                "read": False,
-                "created_at": datetime.now(timezone.utc)
-            })
-    
-    # Determine initial status
-    has_all_docs = all([
-        await db.documents.find_one({
-            "user_id": contract_create.collaborator_id,
-            "document_type": doc_type,
-            "status": DocumentStatus.APPROVED
-        }) for doc_type in required_docs
-    ])
-    
-    initial_status = ContractStatus.UNDER_REVIEW if has_all_docs else ContractStatus.PENDING_DOCUMENTS
-    
-    # Create contract
+    # Create contract with initial status pending_documents
+    # (documents are now associated with the contract, not the user)
     contract_dict = contract_create.model_dump()
     contract_dict.update({
         "id": str(uuid.uuid4()),
-        "status": initial_status,
+        "status": ContractStatus.PENDING_DOCUMENTS,
         "created_by": current_user.id,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc)
@@ -507,17 +470,18 @@ async def create_contract(
         action="create_contract",
         resource_type="contract",
         resource_id=contract_dict["id"],
-        details={"collaborator_id": contract_create.collaborator_id}
+        details={"collaborator_id": contract_create.collaborator_id, "title": contract_create.title}
     )
     
     # Send notification to collaborator
     await db.notifications.insert_one({
         "user_id": contract_create.collaborator_id,
         "title": "Nuevo Contrato Creado",
-        "message": f"Se ha creado un nuevo contrato: {contract_create.title}",
+        "message": f"Se ha creado un nuevo contrato: {contract_create.title}. Por favor cargue los documentos requeridos.",
         "notification_type": "contract_created",
         "read": False,
         "created_at": datetime.now(timezone.utc)
+    })
     })
     
     # Send email
