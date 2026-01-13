@@ -72,7 +72,12 @@ Sistema administrativo para una academia deportiva para gestionar la contrataci�
 
 #### ✅ Notificaciones
 - Sistema de notificaciones en la aplicación
-- Envío de correos (requiere configuración SMTP del usuario)
+- Envío de correos con template HTML profesional (colores corporativos #002d54)
+- **Lógica de correos optimizada:**
+  - NO se envía correo por cada documento aprobado individualmente
+  - Correo SOLO cuando un documento es RECHAZADO (con motivo del rechazo)
+  - Correo cuando TODOS los documentos obligatorios se aprueban
+  - Correos profesionales para: creación de contrato, aprobación, pagos, etc.
 
 #### ✅ Reportes
 - Contratos pendientes de firma
