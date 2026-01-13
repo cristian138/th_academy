@@ -613,18 +613,41 @@ async def review_contract(
     for legal_rep in legal_reps:
         await db.notifications.insert_one({
             "user_id": legal_rep["id"],
-            "title": "Contrato Pendiente de Aprobaci\u00f3n",
-            "message": f"El contrato {contract['title']} requiere su aprobaci\u00f3n",
+            "title": "Contrato Pendiente de Aprobación",
+            "message": f"El contrato {contract['title']} requiere su aprobación",
             "notification_type": "contract_pending_approval",
             "read": False,
             "created_at": datetime.now(timezone.utc)
         })
         
-        # Send email
+        # Send styled email
+        email_content = f'''
+        <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+            Estimado(a) <strong>{legal_rep.get('name', 'Representante Legal')}</strong>,
+        </p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#fef3c7;border-left:4px solid #f59e0b;border-radius:4px;margin:25px 0;">
+            <tr>
+                <td style="padding:15px 20px;">
+                    <p style="color:#92400e;font-size:14px;margin:0;">
+                        <strong>Acción requerida:</strong> El contrato <strong>{contract['title']}</strong> ha completado la revisión de documentos y requiere su aprobación final.
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+            Por favor ingrese al sistema para revisar y aprobar el contrato.
+        </p>
+        '''
+        email_body = build_styled_email(
+            title="Contrato Pendiente de Aprobación",
+            content=email_content,
+            button_text="Revisar Contrato",
+            button_url="https://th.academiajotuns.com"
+        )
         await email_service.send_email(
             recipient_email=legal_rep["email"],
-            subject="Contrato Pendiente de Aprobaci\u00f3n",
-            body=f"<h2>Contrato Pendiente</h2><p>El contrato <strong>{contract['title']}</strong> requiere su aprobaci\u00f3n.</p>"
+            subject="📝 Contrato Pendiente de Aprobación - Academia Jotuns Club",
+            body=email_body
         )
     
     await audit_service.log(
