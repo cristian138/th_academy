@@ -1498,10 +1498,38 @@ async def reject_payment(
         "created_at": datetime.now(timezone.utc)
     })
     
+    # Send styled email
+    email_content = f'''
+    <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+        Estimado(a) <strong>{collaborator.get('name', 'Colaborador')}</strong>,
+    </p>
+    <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+        Le informamos que su cuenta de cobro por <strong>${payment['amount']:,.0f} COP</strong> ha sido <span style="color:#dc2626;font-weight:bold;">RECHAZADA</span>.
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#fef2f2;border-left:4px solid #dc2626;border-radius:4px;margin:25px 0;">
+        <tr>
+            <td style="padding:15px 20px;">
+                <p style="color:#991b1b;font-size:14px;margin:0;">
+                    <strong>Motivo del rechazo:</strong><br>
+                    {rejection_reason}
+                </p>
+            </td>
+        </tr>
+    </table>
+    <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+        Por favor corrija su cuenta de cobro según las observaciones indicadas y vuelva a cargarla en el sistema.
+    </p>
+    '''
+    email_body = build_styled_email(
+        title="Cuenta de Cobro Rechazada",
+        content=email_content,
+        button_text="Corregir Cuenta de Cobro",
+        button_url="https://th.academiajotuns.com"
+    )
     await email_service.send_email(
         recipient_email=collaborator["email"],
-        subject="Cuenta de Cobro Rechazada - Jotuns Club",
-        body=f"<h2>Cuenta de Cobro Rechazada</h2><p>Su cuenta de cobro por <strong>${payment['amount']}</strong> fue rechazada.</p><p><strong>Motivo:</strong> {rejection_reason}</p><p>Por favor corrija y vuelva a cargar la cuenta de cobro.</p>"
+        subject="⚠️ Cuenta de Cobro Rechazada - Academia Jotuns Club",
+        body=email_body
     )
     
     await audit_service.log(
