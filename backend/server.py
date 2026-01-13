@@ -708,11 +708,40 @@ async def approve_contract(
         "created_at": datetime.now(timezone.utc)
     })
     
-    # Send email
+    # Send styled email
+    email_content = f'''
+    <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+        Estimado(a) <strong>{collaborator.get('name', 'Colaborador')}</strong>,
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ecfdf5;border-left:4px solid #10b981;border-radius:4px;margin:25px 0;">
+        <tr>
+            <td style="padding:15px 20px;">
+                <p style="color:#065f46;font-size:16px;margin:0;font-weight:bold;">
+                    ✓ Su contrato "{contract['title']}" ha sido aprobado
+                </p>
+            </td>
+        </tr>
+    </table>
+    <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+        Para completar el proceso de contratación, por favor siga estos pasos:
+    </p>
+    <ol style="color:#333333;font-size:16px;line-height:1.8;margin:0 0 25px 0;padding-left:20px;">
+        <li>Ingrese al sistema</li>
+        <li>Descargue el documento del contrato</li>
+        <li>Imprima, firme y escanee el documento</li>
+        <li>Cargue el documento firmado en el sistema</li>
+    </ol>
+    '''
+    email_body = build_styled_email(
+        title="¡Contrato Aprobado!",
+        content=email_content,
+        button_text="Ir a Firmar Contrato",
+        button_url="https://th.academiajotuns.com"
+    )
     await email_service.send_email(
         recipient_email=collaborator["email"],
-        subject="Contrato Aprobado - SportsAdmin",
-        body=f"<h2>Contrato Aprobado</h2><p>Su contrato <strong>{contract['title']}</strong> ha sido aprobado.</p><p>Por favor descargue, firme y cargue el documento firmado en el sistema.</p>"
+        subject="✓ Contrato Aprobado - Academia Jotuns Club",
+        body=email_body
     )
     
     await audit_service.log(
