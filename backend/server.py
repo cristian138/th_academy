@@ -1593,11 +1593,34 @@ async def confirm_payment(
         "created_at": datetime.now(timezone.utc)
     })
     
-    # Send email
+    # Send styled email
+    email_content = f'''
+    <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+        Estimado(a) <strong>{collaborator.get('name', 'Colaborador')}</strong>,
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ecfdf5;border-left:4px solid #10b981;border-radius:4px;margin:25px 0;">
+        <tr>
+            <td style="padding:15px 20px;">
+                <p style="color:#065f46;font-size:16px;margin:0;font-weight:bold;">
+                    ✓ Su pago por ${payment['amount']:,.0f} COP ha sido procesado exitosamente
+                </p>
+            </td>
+        </tr>
+    </table>
+    <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+        El comprobante de pago ya está disponible. Puede descargarlo ingresando al sistema en la sección de <strong>Pagos</strong>.
+    </p>
+    '''
+    email_body = build_styled_email(
+        title="¡Pago Procesado!",
+        content=email_content,
+        button_text="Descargar Comprobante",
+        button_url="https://th.academiajotuns.com"
+    )
     await email_service.send_email(
         recipient_email=collaborator["email"],
-        subject="Pago Procesado - Jotuns Club",
-        body=f"<h2>Pago Procesado</h2><p>El pago de <strong>${payment['amount']}</strong> ha sido procesado exitosamente.</p><p>Puede descargar su comprobante en el sistema.</p>"
+        subject="💰 Pago Procesado - Academia Jotuns Club",
+        body=email_body
     )
     
     await audit_service.log(
