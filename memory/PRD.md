@@ -133,9 +133,12 @@ Sistema administrativo para una academia deportiva para gestionar la contrataci�
 ---
 
 ### Última Actualización
-**Fecha:** 12 de Enero, 2026
-**Versión:** 1.2.0
+**Fecha:** Diciembre 2025
+**Versión:** 1.3.0
 **Últimos cambios:** 
+- Corregido bug de descarga de comprobante de pago
+- Optimizada lógica de notificaciones por correo (solo rechazo individual, todos aprobados en conjunto)
+- Todos los correos ahora usan template HTML profesional con estilos corporativos
 - Documentos ahora asociados a contratos (no a colaboradores)
 - Flujo de aprobación de documentos antes de aprobar contrato
 - Eliminadas credenciales de prueba del login
