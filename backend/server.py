@@ -1419,10 +1419,34 @@ async def approve_payment(
         "created_at": datetime.now(timezone.utc)
     })
     
+    # Send styled email
+    email_content = f'''
+    <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+        Estimado(a) <strong>{collaborator.get('name', 'Colaborador')}</strong>,
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ecfdf5;border-left:4px solid #10b981;border-radius:4px;margin:25px 0;">
+        <tr>
+            <td style="padding:15px 20px;">
+                <p style="color:#065f46;font-size:16px;margin:0;font-weight:bold;">
+                    ✓ Su cuenta de cobro por ${payment['amount']:,.0f} COP ha sido aprobada
+                </p>
+            </td>
+        </tr>
+    </table>
+    <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+        Su pago está siendo procesado. Le notificaremos cuando el pago se haya completado y el comprobante esté disponible.
+    </p>
+    '''
+    email_body = build_styled_email(
+        title="Cuenta de Cobro Aprobada",
+        content=email_content,
+        button_text="Ver Estado del Pago",
+        button_url="https://th.academiajotuns.com"
+    )
     await email_service.send_email(
         recipient_email=collaborator["email"],
-        subject="Cuenta de Cobro Aprobada - Jotuns Club",
-        body=f"<h2>Cuenta de Cobro Aprobada</h2><p>Su cuenta de cobro por <strong>${payment['amount']}</strong> ha sido aprobada.</p>"
+        subject="✓ Cuenta de Cobro Aprobada - Academia Jotuns Club",
+        body=email_body
     )
     
     await audit_service.log(
