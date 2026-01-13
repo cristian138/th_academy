@@ -60,6 +60,7 @@ Sistema administrativo para una academia deportiva para gestionar la contrataci�
 - **Rechazo:** Motivo del rechazo visible para colaborador
 - **Reenvío:** Colaborador puede corregir y resubir cuenta rechazada
 - **Comprobante:** Contador genera comprobante de pago
+- **Descarga de Comprobante:** Colaborador puede descargar el comprobante del pago realizado
 
 #### ✅ Reportes y Exportación
 - Reportes de contratos pendientes, activos
