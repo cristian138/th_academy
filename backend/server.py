@@ -482,13 +482,35 @@ async def create_contract(
         "read": False,
         "created_at": datetime.now(timezone.utc)
     })
-    })
     
-    # Send email
+    # Send email with styled template
+    email_content = f'''
+    <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+        Estimado(a) <strong>{collaborator.get('name', 'Colaborador')}</strong>,
+    </p>
+    <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+        Se ha creado un nuevo contrato para usted: <strong>{contract_create.title}</strong>
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#fff7ed;border-left:4px solid #f97316;border-radius:4px;margin:25px 0;">
+        <tr>
+            <td style="padding:15px 20px;">
+                <p style="color:#9a3412;font-size:14px;margin:0;">
+                    <strong>Acción requerida:</strong> Por favor ingrese al sistema y cargue los documentos requeridos para completar su proceso de contratación.
+                </p>
+            </td>
+        </tr>
+    </table>
+    '''
+    email_body = build_styled_email(
+        title="Nuevo Contrato Creado",
+        content=email_content,
+        button_text="Ir al Sistema",
+        button_url="https://th.academiajotuns.com"
+    )
     await email_service.send_email(
         recipient_email=collaborator["email"],
-        subject="Nuevo Contrato Creado - SportsAdmin",
-        body=f"<h2>Nuevo Contrato</h2><p>Se ha creado un nuevo contrato: <strong>{contract_create.title}</strong></p><p>Por favor revise los detalles en el sistema.</p>"
+        subject="📋 Nuevo Contrato Creado - Academia Jotuns Club",
+        body=email_body
     )
     
     return Contract(**contract_dict)
