@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 class ExtendedSportsAdminAPITester:
-    def __init__(self, base_url="https://sport-staff-portal.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://sportacademy-7.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.tokens = {}
         self.tests_run = 0
