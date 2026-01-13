@@ -1342,11 +1342,34 @@ async def upload_bill(
             "created_at": datetime.now(timezone.utc)
         })
         
-        # Send email
+        # Send styled email
+        email_content = f'''
+        <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+            Estimado(a) <strong>{accountant.get('name', 'Contador')}</strong>,
+        </p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#fef3c7;border-left:4px solid #f59e0b;border-radius:4px;margin:25px 0;">
+            <tr>
+                <td style="padding:15px 20px;">
+                    <p style="color:#92400e;font-size:14px;margin:0;">
+                        <strong>Nueva cuenta de cobro:</strong> Se ha recibido una cuenta de cobro por <strong>${payment['amount']:,.0f} COP</strong> que requiere su revisión y aprobación.
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+            Por favor ingrese al sistema para revisar y aprobar o rechazar la cuenta de cobro.
+        </p>
+        '''
+        email_body = build_styled_email(
+            title="Nueva Cuenta de Cobro Pendiente",
+            content=email_content,
+            button_text="Revisar Cuenta de Cobro",
+            button_url="https://th.academiajotuns.com"
+        )
         await email_service.send_email(
             recipient_email=accountant["email"],
-            subject="Nueva Cuenta de Cobro - Jotuns Club",
-            body=f"<h2>Cuenta de Cobro Pendiente</h2><p>Una cuenta de cobro por <strong>${payment['amount']}</strong> requiere su aprobación.</p>"
+            subject="💰 Nueva Cuenta de Cobro - Academia Jotuns Club",
+            body=email_body
         )
     
     await audit_service.log(
