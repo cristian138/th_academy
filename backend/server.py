@@ -930,6 +930,69 @@ async def upload_contract_document(
     
     return {"message": "Document uploaded successfully", "document_id": doc_id}
 
+def build_styled_email(title: str, content: str, button_text: str = None, button_url: str = None) -> str:
+    """Build a professionally styled HTML email template"""
+    button_html = ""
+    if button_text and button_url:
+        button_html = f'''
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:30px 0;">
+            <tr>
+                <td style="background-color:#002d54;border-radius:6px;">
+                    <a href="{button_url}" style="display:inline-block;padding:15px 35px;color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;">{button_text}</a>
+                </td>
+            </tr>
+        </table>
+        '''
+    
+    return f'''<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f4f4f4;">
+        <tr>
+            <td align="center" style="padding:20px 0;">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color:#002d54;padding:30px 40px;text-align:center;">
+                            <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:bold;">Sistema de Talento Humano</h1>
+                            <p style="color:#a0c4e8;margin:8px 0 0 0;font-size:14px;">Academia Jotuns Club SAS</p>
+                        </td>
+                    </tr>
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding:40px;">
+                            <h2 style="color:#002d54;margin:0 0 20px 0;font-size:22px;">{title}</h2>
+                            {content}
+                            {button_html}
+                            <p style="color:#666666;font-size:14px;line-height:1.6;margin:25px 0 0 0;">
+                                Saludos cordiales,<br>
+                                <strong style="color:#002d54;">Sistema de Talento Humano</strong><br>
+                                Academia Jotuns Club SAS
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color:#002d54;padding:20px 40px;text-align:center;">
+                            <p style="color:#a0c4e8;font-size:12px;margin:0;">
+                                © 2026 Academia Jotuns Club SAS - Todos los derechos reservados
+                            </p>
+                            <p style="color:#6a9bc3;font-size:11px;margin:10px 0 0 0;">
+                                Este correo fue enviado automáticamente, por favor no responda a este mensaje.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>'''
+
 @app.put("/api/documents/{document_id}/review")
 async def review_document(
     document_id: str,
@@ -959,7 +1022,7 @@ async def review_document(
         doc_label = DOCUMENT_LABELS.get(document['document_type'], document['document_type'])
         new_status = update_data.get('status', 'revisado')
         
-        # Create notification
+        # Create notification (always)
         if new_status == 'approved':
             notification_msg = f"Su documento '{doc_label}' ha sido APROBADO."
         elif new_status == 'rejected':
@@ -977,37 +1040,39 @@ async def review_document(
             "created_at": datetime.now(timezone.utc)
         })
         
-        # Send email to collaborator
-        if collaborator and collaborator.get("email"):
-            if new_status == 'approved':
-                email_body = f"""
-                <h2>Documento Aprobado</h2>
-                <p>Estimado(a) {collaborator.get('name', 'Colaborador')},</p>
-                <p>Le informamos que su documento <strong>{doc_label}</strong> del contrato <strong>{contract['title']}</strong> ha sido <span style="color: green; font-weight: bold;">APROBADO</span>.</p>
-                <p>Saludos cordiales,<br>Sistema de Talento Humano</p>
-                """
-            elif new_status == 'rejected':
-                review_notes = update_data.get('review_notes', 'Sin observaciones específicas')
-                email_body = f"""
-                <h2>Documento Rechazado - Acción Requerida</h2>
-                <p>Estimado(a) {collaborator.get('name', 'Colaborador')},</p>
-                <p>Le informamos que su documento <strong>{doc_label}</strong> del contrato <strong>{contract['title']}</strong> ha sido <span style="color: red; font-weight: bold;">RECHAZADO</span>.</p>
-                <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                    <strong>Observación:</strong><br>
-                    {review_notes}
-                </div>
-                <p>Por favor ingrese al sistema, corrija el documento según las observaciones indicadas y vuelva a cargarlo.</p>
-                <p>Saludos cordiales,<br>Sistema de Talento Humano</p>
-                """
-            else:
-                email_body = f"""
-                <h2>Documento Revisado</h2>
-                <p>Su documento {doc_label} ha sido revisado.</p>
-                """
-            
+        # Send email ONLY when document is REJECTED (not for individual approvals)
+        if collaborator and collaborator.get("email") and new_status == 'rejected':
+            review_notes = update_data.get('review_notes', 'Sin observaciones específicas')
+            email_content = f'''
+            <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+                Estimado(a) <strong>{collaborator.get('name', 'Colaborador')}</strong>,
+            </p>
+            <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+                Le informamos que su documento <strong>{doc_label}</strong> del contrato <strong>{contract['title']}</strong> ha sido <span style="color:#dc2626;font-weight:bold;">RECHAZADO</span>.
+            </p>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#fef2f2;border-left:4px solid #dc2626;border-radius:4px;margin:25px 0;">
+                <tr>
+                    <td style="padding:15px 20px;">
+                        <p style="color:#991b1b;font-size:14px;margin:0;">
+                            <strong>Motivo del rechazo:</strong><br>
+                            {review_notes}
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+                Por favor ingrese al sistema, corrija el documento según las observaciones indicadas y vuelva a cargarlo.
+            </p>
+            '''
+            email_body = build_styled_email(
+                title="Documento Rechazado - Acción Requerida",
+                content=email_content,
+                button_text="Ir al Sistema",
+                button_url="https://th.academiajotuns.com"
+            )
             await email_service.send_email(
                 recipient_email=collaborator["email"],
-                subject=f"Documento {new_status.upper()} - {doc_label}",
+                subject=f"⚠️ Documento Rechazado - {doc_label}",
                 body=email_body
             )
         
@@ -1025,18 +1090,39 @@ async def review_document(
                         {"$set": {"status": ContractStatus.PENDING_APPROVAL, "updated_at": datetime.now(timezone.utc)}}
                     )
                     
-                    # Notify collaborator that all docs are approved
-                    await email_service.send_email(
-                        recipient_email=collaborator["email"],
-                        subject=f"Documentos Completos - Contrato {contract['title']}",
-                        body=f"""
-                        <h2>Todos sus Documentos han sido Aprobados</h2>
-                        <p>Estimado(a) {collaborator.get('name', 'Colaborador')},</p>
-                        <p>Le informamos que <strong>todos sus documentos obligatorios</strong> para el contrato <strong>{contract['title']}</strong> han sido aprobados.</p>
-                        <p>Su contrato ahora está pendiente de aprobación final por parte del Representante Legal.</p>
-                        <p>Saludos cordiales,<br>Sistema de Talento Humano</p>
-                        """
-                    )
+                    # Send email ONLY when ALL required documents are approved
+                    if collaborator and collaborator.get("email"):
+                        email_content = f'''
+                        <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+                            Estimado(a) <strong>{collaborator.get('name', 'Colaborador')}</strong>,
+                        </p>
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ecfdf5;border-left:4px solid #10b981;border-radius:4px;margin:25px 0;">
+                            <tr>
+                                <td style="padding:15px 20px;">
+                                    <p style="color:#065f46;font-size:16px;margin:0;font-weight:bold;">
+                                        ✓ Todos sus documentos obligatorios han sido aprobados
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                        <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+                            Le informamos que todos los documentos requeridos para el contrato <strong>{contract['title']}</strong> han sido revisados y aprobados exitosamente.
+                        </p>
+                        <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+                            Su contrato ahora está <strong>pendiente de aprobación final</strong> por parte del Representante Legal. Le notificaremos cuando el proceso esté completo.
+                        </p>
+                        '''
+                        email_body = build_styled_email(
+                            title="¡Documentos Completos!",
+                            content=email_content,
+                            button_text="Ver Estado del Contrato",
+                            button_url="https://th.academiajotuns.com"
+                        )
+                        await email_service.send_email(
+                            recipient_email=collaborator["email"],
+                            subject=f"✓ Documentos Completos - Contrato {contract['title']}",
+                            body=email_body
+                        )
     
     await audit_service.log(
         user_id=current_user.id,
