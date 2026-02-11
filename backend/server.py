@@ -515,13 +515,13 @@ async def create_contract(
     
     return Contract(**contract_dict)
 
-@app.get("/api/contracts", response_model=List[Contract])
+@app.get("/api/contracts")
 async def list_contracts(
     status: Optional[ContractStatus] = None,
     collaborator_id: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
-    """List contracts"""
+    """List contracts with collaborator info"""
     db = await get_database()
     query = {}
     
@@ -534,7 +534,27 @@ async def list_contracts(
         query["collaborator_id"] = collaborator_id
     
     contracts = await db.contracts.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    return [Contract(**contract) for contract in contracts]
+    
+    # Get collaborator info for each contract
+    collaborator_ids = list(set([c.get("collaborator_id") for c in contracts if c.get("collaborator_id")]))
+    collaborators = await db.users.find(
+        {"id": {"$in": collaborator_ids}}, 
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "phone": 1, "identification": 1}
+    ).to_list(1000)
+    collab_map = {c["id"]: c for c in collaborators}
+    
+    # Add collaborator info to each contract
+    result = []
+    for contract in contracts:
+        contract_data = Contract(**contract).model_dump()
+        collab_info = collab_map.get(contract.get("collaborator_id"), {})
+        contract_data["collaborator_name"] = collab_info.get("name", "N/A")
+        contract_data["collaborator_email"] = collab_info.get("email", "")
+        contract_data["collaborator_phone"] = collab_info.get("phone", "")
+        contract_data["collaborator_identification"] = collab_info.get("identification", "")
+        result.append(contract_data)
+    
+    return result
 
 @app.get("/api/contracts/{contract_id}", response_model=Contract)
 async def get_contract(
