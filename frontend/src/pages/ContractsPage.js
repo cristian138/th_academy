@@ -124,7 +124,17 @@ export const ContractsPage = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                    {/* Colaborador */}
+                    {user.role !== 'collaborator' && contract.collaborator_name && (
+                      <div>
+                        <p className="text-xs uppercase text-slate-500 font-bold mb-1">Colaborador</p>
+                        <div className="flex items-center gap-1.5">
+                          <User size={14} className="text-brand-navy" />
+                          <p className="text-sm text-brand-navy font-medium">{contract.collaborator_name}</p>
+                        </div>
+                      </div>
+                    )}
                     <div>
                       <p className="text-xs uppercase text-slate-500 font-bold mb-1">Tipo</p>
                       <p className="text-sm text-brand-navy">
@@ -137,7 +147,7 @@ export const ContractsPage = () => {
                         {new Date(contract.start_date).toLocaleDateString('es-CO')}
                       </p>
                     </div>
-                    {contract.monthly_payment && (
+                    {contract.monthly_payment > 0 && (
                       <div>
                         <p className="text-xs uppercase text-slate-500 font-bold mb-1">Pago Mensual</p>
                         <p className="text-sm text-brand-navy font-semibold tabular-nums">
@@ -145,7 +155,7 @@ export const ContractsPage = () => {
                         </p>
                       </div>
                     )}
-                    {contract.payment_per_session && (
+                    {contract.payment_per_session > 0 && (
                       <div>
                         <p className="text-xs uppercase text-slate-500 font-bold mb-1">Por Sesión</p>
                         <p className="text-sm text-brand-navy font-semibold tabular-nums">
