@@ -30,7 +30,7 @@ const getStatusBadge = (status) => {
 };
 
 export const ContractsPage = () => {
-  const { hasRole } = useAuth();
+  const { hasRole, user } = useAuth();
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,6 +47,10 @@ export const ContractsPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportExcel = () => {
+    reportsAPI.exportContracts();
   };
 
   if (loading) {
@@ -67,17 +71,30 @@ export const ContractsPage = () => {
             <h1 className="text-4xl font-bold text-brand-navy mb-2">Contratos</h1>
             <p className="text-slate-600">Gestione los contratos de colaboradores</p>
           </div>
-          {hasRole('legal_rep') && (
-            <Link to="/contracts/new">
+          <div className="flex gap-2">
+            {hasRole('admin') && (
               <Button
-                data-testid="new-contract-button"
-                className="bg-brand-navy hover:bg-brand-navy/90 text-white rounded-sm font-medium px-6 py-2.5 uppercase tracking-wide text-xs"
+                onClick={handleExportExcel}
+                variant="outline"
+                data-testid="export-contracts-button"
+                className="border-slate-200 hover:bg-slate-50 rounded-sm font-medium px-4 py-2.5 uppercase tracking-wide text-xs"
               >
-                <Plus size={18} className="mr-2" />
-                Nuevo Contrato
+                <Download size={16} className="mr-2" />
+                Exportar Excel
               </Button>
-            </Link>
-          )}
+            )}
+            {hasRole('legal_rep') && (
+              <Link to="/contracts/new">
+                <Button
+                  data-testid="new-contract-button"
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-white rounded-sm font-medium px-6 py-2.5 uppercase tracking-wide text-xs"
+                >
+                  <Plus size={18} className="mr-2" />
+                  Nuevo Contrato
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
 
         {contracts.length === 0 ? (
