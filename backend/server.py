@@ -1024,6 +1024,114 @@ async def upload_contract_document(
     
     return {"message": "Document uploaded successfully", "document_id": doc_id}
 
+@app.delete("/api/contracts/{contract_id}/documents/{document_id}")
+async def delete_contract_document(
+    contract_id: str,
+    document_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a document from a contract (before approval)"""
+    db = await get_database()
+    
+    # Verify contract exists
+    contract = await db.contracts.find_one({"id": contract_id})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    # Get document
+    document = await db.documents.find_one({"id": document_id, "contract_id": contract_id})
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Only allow deletion if document is not approved
+    if document["status"] == "approved":
+        raise HTTPException(status_code=400, detail="No se puede eliminar un documento aprobado")
+    
+    # Check permissions - collaborator can only delete their own, admin can delete any
+    if current_user.role == UserRole.COLLABORATOR:
+        if contract["collaborator_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    elif not auth_service.has_permission(current_user.role, UserRole.ADMIN):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    # Delete the document
+    await db.documents.delete_one({"id": document_id})
+    
+    # Delete the file from storage
+    if document.get("file_id"):
+        await storage_service.delete_file(document["file_id"])
+    
+    # Check if contract should go back to pending_documents
+    docs = await db.documents.find({"contract_id": contract_id}, {"_id": 0}).to_list(100)
+    uploaded_types = {doc["document_type"] for doc in docs}
+    required_types = {dt.value for dt in REQUIRED_DOCUMENTS}
+    
+    if not required_types.issubset(uploaded_types) and contract["status"] == ContractStatus.UNDER_REVIEW:
+        await db.contracts.update_one(
+            {"id": contract_id},
+            {"$set": {"status": ContractStatus.PENDING_DOCUMENTS, "updated_at": datetime.now(timezone.utc)}}
+        )
+    
+    await audit_service.log(
+        user_id=current_user.id,
+        action="delete_document",
+        resource_type="document",
+        resource_id=document_id,
+        details={"contract_id": contract_id, "document_type": document.get("document_type")}
+    )
+    
+    return {"message": "Documento eliminado exitosamente"}
+
+@app.delete("/api/contracts/{contract_id}/signed-contract")
+async def delete_signed_contract(
+    contract_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete the signed contract file to allow re-upload"""
+    db = await get_database()
+    
+    # Verify contract exists
+    contract = await db.contracts.find_one({"id": contract_id})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    # Check if there's a signed contract
+    if not contract.get("signed_file_id"):
+        raise HTTPException(status_code=400, detail="No hay contrato firmado para eliminar")
+    
+    # Check permissions - collaborator can only delete their own, admin can delete any
+    if current_user.role == UserRole.COLLABORATOR:
+        if contract["collaborator_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    elif not auth_service.has_permission(current_user.role, UserRole.ADMIN):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    # Only allow deletion if contract is not completed
+    if contract["status"] == ContractStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="No se puede eliminar el contrato de un proceso completado")
+    
+    # Delete the file from storage
+    await storage_service.delete_file(contract["signed_file_id"])
+    
+    # Update contract - remove signed file and revert status to approved
+    await db.contracts.update_one(
+        {"id": contract_id},
+        {"$set": {
+            "signed_file_id": None,
+            "status": ContractStatus.APPROVED,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    await audit_service.log(
+        user_id=current_user.id,
+        action="delete_signed_contract",
+        resource_type="contract",
+        resource_id=contract_id
+    )
+    
+    return {"message": "Contrato firmado eliminado. Puede cargar uno nuevo."}
+
 def build_styled_email(title: str, content: str, button_text: str = None, button_url: str = None) -> str:
     """Build a professionally styled HTML email template"""
     button_html = ""
