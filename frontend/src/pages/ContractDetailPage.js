@@ -365,6 +365,21 @@ export const ContractDetailPage = () => {
                             </a>
                           )}
                           
+                          {/* Eliminar documento (solo si no está aprobado) */}
+                          {doc.uploaded && doc.status !== 'approved' && (canUploadDocuments || canReviewDocuments) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteDocument(doc.document.id, doc.label)}
+                              disabled={actionLoading}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-sm"
+                              title="Eliminar documento"
+                              data-testid={`delete-doc-${doc.type}`}
+                            >
+                              <Trash2 size={18} />
+                            </Button>
+                          )}
+                          
                           {/* Colaborador: Cargar documento */}
                           {canUploadDocuments && (!doc.uploaded || doc.status === 'rejected') && (
                             <div>
