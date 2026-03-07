@@ -88,12 +88,18 @@ export const documentsAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
+  deleteDocument: (contractId, documentId) => api.delete(`/contracts/${contractId}/documents/${documentId}`),
   review: (id, data) => api.put(`/documents/${id}/review`, data),
   getExpiring: (days) => api.get('/documents/expiring', { params: { days } }),
   downloadFile: (fileId) => {
     const token = localStorage.getItem('token');
     return `${process.env.REACT_APP_BACKEND_URL}/api/files/view/${fileId}?token=${token}`;
   }
+};
+
+// Contracts - signed contract operations
+export const signedContractAPI = {
+  delete: (contractId) => api.delete(`/contracts/${contractId}/signed-contract`)
 };
 
 // Payments
