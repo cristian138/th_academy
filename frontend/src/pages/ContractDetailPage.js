@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
-import { contractsAPI, documentsAPI } from '../services/api';
+import { contractsAPI, documentsAPI, signedContractAPI } from '../services/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, CheckCircle2, Upload, FileText, Download, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Upload, FileText, Download, XCircle, Clock, AlertCircle, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getStatusBadge = (status) => {
