@@ -547,18 +547,33 @@ export const ContractDetailPage = () => {
                           <CheckCircle2 size={24} className="text-emerald-700" />
                           <div>
                             <p className="font-semibold text-emerald-900">Contrato Firmado</p>
-                            <p className="text-sm text-emerald-700">Documento firmado</p>
+                            <p className="text-sm text-emerald-700">Documento firmado cargado</p>
                           </div>
                         </div>
-                        <a
-                          href={contractsAPI.downloadFile(contract.signed_file_id)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-sm hover:bg-emerald-700"
-                        >
-                          <Download size={16} />
-                          Descargar
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={contractsAPI.downloadFile(contract.signed_file_id)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-sm hover:bg-emerald-700"
+                          >
+                            <Download size={16} />
+                            Descargar
+                          </a>
+                          {/* Botón eliminar contrato firmado - solo si no está completado */}
+                          {contract.status !== 'completed' && (canUploadDocuments || canReviewDocuments) && (
+                            <Button
+                              variant="ghost"
+                              onClick={handleDeleteSignedContract}
+                              disabled={actionLoading}
+                              className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-sm"
+                              title="Eliminar contrato firmado"
+                              data-testid="delete-signed-contract"
+                            >
+                              <Trash2 size={18} />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
