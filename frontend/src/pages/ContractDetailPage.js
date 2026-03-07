@@ -169,6 +169,41 @@ export const ContractDetailPage = () => {
     }
   };
 
+  const handleDeleteDocument = async (documentId, docLabel) => {
+    if (!window.confirm(`¿Está seguro de eliminar el documento "${docLabel}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      await documentsAPI.deleteDocument(id, documentId);
+      toast.success('Documento eliminado exitosamente');
+      loadDocuments();
+      loadContract();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al eliminar documento');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteSignedContract = async () => {
+    if (!window.confirm('¿Está seguro de eliminar el contrato firmado? Podrá cargar uno nuevo después.')) {
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      await signedContractAPI.delete(id);
+      toast.success('Contrato firmado eliminado. Puede cargar uno nuevo.');
+      loadContract();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al eliminar contrato firmado');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleReview = async () => {
     setActionLoading(true);
     try {
