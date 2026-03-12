@@ -174,21 +174,31 @@ class CertificateService:
         pdf.cell(0, 6, f'Identificado(a) con documento No. {collaborator_id}', 0, 1, 'C')
         pdf.ln(6)
         
-        # Contract details with OBJETO
+        # Contract details
         pdf.set_font('Helvetica', '', 11)
         
-        # Build the certificate text
+        # Determine status text
         if end_date:
-            period_text = f"desde el {self._format_date(start_date)} hasta el {self._format_date(end_date)}"
             status_text = "presto"
         else:
-            period_text = f"desde el {self._format_date(start_date)} hasta la fecha"
             status_text = "presta"
         
         pdf.multi_cell(0, 6,
-            f'{status_text.upper()} sus servicios a nuestra organizacion mediante CONTRATO DE PRESTACION DE SERVICIOS, ' +
-            f'{period_text}.'
+            f'{status_text.upper()} sus servicios a nuestra organizacion mediante CONTRATO DE PRESTACION DE SERVICIOS.'
         )
+        pdf.ln(4)
+        
+        # Fechas del contrato
+        pdf.set_font('Helvetica', 'B', 11)
+        pdf.cell(0, 6, 'VIGENCIA DEL CONTRATO:', 0, 1, 'L')
+        pdf.set_font('Helvetica', '', 11)
+        pdf.cell(50, 6, 'Fecha de inicio:', 0, 0, 'L')
+        pdf.cell(0, 6, self._format_date(start_date).upper(), 0, 1, 'L')
+        pdf.cell(50, 6, 'Fecha de finalizacion:', 0, 0, 'L')
+        if end_date:
+            pdf.cell(0, 6, self._format_date(end_date).upper(), 0, 1, 'L')
+        else:
+            pdf.cell(0, 6, 'INDEFINIDO', 0, 1, 'L')
         pdf.ln(4)
         
         # OBJETO del contrato - usar la descripción del contrato
