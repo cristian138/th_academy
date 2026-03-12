@@ -828,10 +828,23 @@ async def upload_signed_contract(
 @app.get("/api/contracts/{contract_id}/certificate")
 async def generate_labor_certificate(
     contract_id: str,
-    current_user: User = Depends(get_current_user)
+    token: str
 ):
     """Generate a labor certificate for a contract"""
+    # Verify token
+    payload = auth_service.decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
     db = await get_database()
+    
+    # Get current user from token
+    current_user_data = await db.users.find_one({"id": payload["sub"]})
+    if not current_user_data or not current_user_data.get("is_active"):
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+    
+    current_user_role = current_user_data.get("role")
+    current_user_id = current_user_data.get("id")
     
     # Get contract
     contract = await db.contracts.find_one({"id": contract_id})
@@ -841,10 +854,10 @@ async def generate_labor_certificate(
     # Permission check:
     # - Collaborator can only generate their own certificate
     # - Legal rep and superadmin can generate any certificate
-    if current_user.role == UserRole.COLLABORATOR:
-        if contract["collaborator_id"] != current_user.id:
+    if current_user_role == UserRole.COLLABORATOR:
+        if contract["collaborator_id"] != current_user_id:
             raise HTTPException(status_code=403, detail="Solo puede generar certificados de sus propios contratos")
-    elif current_user.role not in [UserRole.LEGAL_REP, UserRole.SUPERADMIN]:
+    elif current_user_role not in [UserRole.LEGAL_REP, UserRole.SUPERADMIN]:
         raise HTTPException(status_code=403, detail="No tiene permisos para generar certificados")
     
     # Get collaborator info
@@ -875,7 +888,7 @@ async def generate_labor_certificate(
     
     # Log the action
     await audit_service.log(
-        user_id=current_user.id,
+        user_id=current_user_id,
         action="generate_certificate",
         resource_type="contract",
         resource_id=contract_id,
