@@ -11,6 +11,7 @@ import { DocumentsPage } from './pages/DocumentsPage';
 import { PaymentsPage } from './pages/PaymentsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { UsersPage } from './pages/UsersPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { Toaster } from '@/components/ui/sonner';
 import './App.css';
 
