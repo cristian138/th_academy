@@ -238,7 +238,7 @@ class CertificateService:
         pdf.cell(0, 5, 'ACADEMIA JOTUNS CLUB SAS', 0, 1, 'C')
         
         # Return PDF as bytes
-        return pdf.output()
+        return bytes(pdf.output())
 
 
 certificate_service = CertificateService()
