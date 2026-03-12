@@ -2121,7 +2121,7 @@ async def download_file(file_id: str, token: Optional[str] = None, current_user:
 
 @app.get("/api/files/view/{file_id}")
 async def view_file(file_id: str, token: str):
-    """View/download file using token in query parameter (for opening in new tab)"""
+    """View file in browser (inline) using token in query parameter"""
     from fastapi.responses import FileResponse
     
     # Verify token
@@ -2148,8 +2148,9 @@ async def view_file(file_id: str, token: str):
     }
     media_type = media_types.get(ext, 'application/octet-stream')
     
+    # Return file with Content-Disposition: inline to display in browser
     return FileResponse(
         path=file_path,
-        filename=os.path.basename(file_path),
-        media_type=media_type
+        media_type=media_type,
+        headers={"Content-Disposition": "inline"}
     )
