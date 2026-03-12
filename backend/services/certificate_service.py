@@ -191,11 +191,13 @@ class CertificateService:
         )
         pdf.ln(4)
         
-        # OBJETO del contrato
+        # OBJETO del contrato - usar la descripción del contrato
         pdf.set_font('Helvetica', 'B', 11)
         pdf.cell(0, 6, 'OBJETO:', 0, 1, 'L')
-        pdf.set_font('Helvetica', '', 11)
-        pdf.multi_cell(0, 6, contract_title)
+        pdf.set_font('Helvetica', '', 10)
+        # Use description if available, otherwise use title
+        objeto_text = contract_description if contract_description else contract_title
+        pdf.multi_cell(0, 5, objeto_text)
         pdf.ln(4)
         
         # Payment information
