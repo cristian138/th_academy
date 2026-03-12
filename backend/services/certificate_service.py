@@ -146,33 +146,33 @@ class CertificateService:
         pdf.set_font('Helvetica', 'B', 18)
         pdf.set_text_color(0, 45, 84)
         pdf.cell(0, 15, 'CERTIFICADO LABORAL', 0, 1, 'C')
-        pdf.ln(5)
+        pdf.ln(3)
         
         # Subtitle - Contract type
         pdf.set_font('Helvetica', 'B', 12)
         pdf.set_text_color(0, 45, 84)
         pdf.cell(0, 8, 'CONTRATO POR PRESTACION DE SERVICIOS', 0, 1, 'C')
-        pdf.ln(10)
+        pdf.ln(8)
         
         # Certificate body
         pdf.set_font('Helvetica', '', 11)
         pdf.set_text_color(0, 0, 0)
         
         # Introduction
-        pdf.multi_cell(0, 7, 
+        pdf.multi_cell(0, 6, 
             'El suscrito Representante Legal de ACADEMIA JOTUNS CLUB SAS, ' +
-            'sociedad legalmente constituida, identificada con NIT 901.XXX.XXX-X, certifica que:'
+            'sociedad legalmente constituida, identificada con NIT 901.863.346-4, certifica que:'
         )
-        pdf.ln(8)
+        pdf.ln(6)
         
         # Collaborator info
         pdf.set_font('Helvetica', 'B', 11)
-        pdf.cell(0, 7, f'{collaborator_name.upper()}', 0, 1, 'C')
+        pdf.cell(0, 6, f'{collaborator_name.upper()}', 0, 1, 'C')
         pdf.set_font('Helvetica', '', 11)
-        pdf.cell(0, 7, f'Identificado(a) con documento No. {collaborator_id}', 0, 1, 'C')
-        pdf.ln(8)
+        pdf.cell(0, 6, f'Identificado(a) con documento No. {collaborator_id}', 0, 1, 'C')
+        pdf.ln(6)
         
-        # Contract details
+        # Contract details with OBJETO
         pdf.set_font('Helvetica', '', 11)
         
         # Build the certificate text
@@ -183,59 +183,67 @@ class CertificateService:
             period_text = f"desde el {self._format_date(start_date)} hasta la fecha"
             status_text = "presta"
         
-        pdf.multi_cell(0, 7,
+        pdf.multi_cell(0, 6,
             f'{status_text.upper()} sus servicios a nuestra organizacion mediante CONTRATO DE PRESTACION DE SERVICIOS, ' +
-            f'{period_text}, desempenando labores relacionadas con: {contract_title}.'
+            f'{period_text}.'
         )
-        pdf.ln(5)
+        pdf.ln(4)
+        
+        # OBJETO del contrato
+        pdf.set_font('Helvetica', 'B', 11)
+        pdf.cell(0, 6, 'OBJETO:', 0, 1, 'L')
+        pdf.set_font('Helvetica', '', 11)
+        pdf.multi_cell(0, 6, contract_title)
+        pdf.ln(4)
         
         # Payment information
         pdf.set_font('Helvetica', 'B', 11)
-        pdf.cell(0, 10, 'INFORMACION DE HONORARIOS:', 0, 1, 'L')
+        pdf.cell(0, 8, 'HONORARIOS:', 0, 1, 'L')
         pdf.set_font('Helvetica', '', 11)
         
         if payment_per_session and payment_per_session > 0:
             amount_words = self._number_to_words(payment_per_session)
-            pdf.multi_cell(0, 7,
+            pdf.multi_cell(0, 6,
                 f'El contratista recibe honorarios por valor de {self._format_currency(payment_per_session)} ' +
                 f'({amount_words} PESOS M/CTE) por cada sesion o servicio prestado.'
             )
         elif monthly_payment and monthly_payment > 0:
             amount_words = self._number_to_words(monthly_payment)
-            pdf.multi_cell(0, 7,
+            pdf.multi_cell(0, 6,
                 f'El contratista recibe honorarios mensuales por valor de {self._format_currency(monthly_payment)} ' +
                 f'({amount_words} PESOS M/CTE).'
             )
         
-        pdf.ln(10)
+        pdf.ln(6)
         
         # Legal note
-        pdf.set_font('Helvetica', 'I', 10)
+        pdf.set_font('Helvetica', 'I', 9)
         pdf.set_text_color(80, 80, 80)
-        pdf.multi_cell(0, 6,
+        pdf.multi_cell(0, 5,
             'NOTA: El presente contrato es de naturaleza civil y no genera relacion laboral. ' +
             'El contratista es responsable del pago de sus propias obligaciones de seguridad social ' +
             '(salud, pension y ARL) conforme a la normatividad vigente.'
         )
-        pdf.ln(15)
+        pdf.ln(8)
         
         # Issue statement
         pdf.set_font('Helvetica', '', 11)
         pdf.set_text_color(0, 0, 0)
         today = datetime.now()
-        pdf.multi_cell(0, 7,
-            f'Se expide el presente certificado a solicitud del interesado, en la ciudad de Bogota D.C., ' +
+        pdf.multi_cell(0, 6,
+            f'Se expide el presente certificado a solicitud del interesado, en el municipio de Sesquile, Cundinamarca, ' +
             f'a los {today.day} dias del mes de {self._format_date(today).split(" de ")[1].split(" de ")[0]} de {today.year}.'
         )
-        pdf.ln(20)
+        pdf.ln(25)
         
-        # Signature
+        # Signature - with proper spacing
         pdf.set_font('Helvetica', 'B', 11)
-        pdf.cell(0, 7, '____________________________________', 0, 1, 'C')
-        pdf.cell(0, 7, legal_rep_name.upper(), 0, 1, 'C')
+        pdf.cell(0, 6, '____________________________________', 0, 1, 'C')
+        pdf.cell(0, 6, legal_rep_name.upper(), 0, 1, 'C')
         pdf.set_font('Helvetica', '', 10)
         pdf.cell(0, 5, 'Representante Legal', 0, 1, 'C')
         pdf.cell(0, 5, 'ACADEMIA JOTUNS CLUB SAS', 0, 1, 'C')
+        pdf.cell(0, 5, 'NIT 901.863.346-4', 0, 1, 'C')
         
         # Return PDF as bytes
         return bytes(pdf.output())
