@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import Response
 from contextlib import asynccontextmanager
 from database import connect_db, close_db, get_database
 from config import settings
@@ -15,6 +16,7 @@ from services.auth_service import auth_service
 from services.email_service import email_service
 from services.storage_service import storage_service
 from services.audit_service import audit_service
+from services.certificate_service import certificate_service
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 import logging
