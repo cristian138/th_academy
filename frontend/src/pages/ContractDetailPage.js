@@ -315,8 +315,20 @@ export const ContractDetailPage = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Detalles del Contrato */}
             <Card className="border border-slate-200 rounded-sm">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-bold text-brand-navy">Detalles del Contrato</CardTitle>
+                {(hasRole('legal_rep') || hasRole('superadmin')) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={openEditDialog}
+                    className="text-brand-navy hover:bg-brand-navy/10"
+                    data-testid="edit-contract-btn"
+                  >
+                    <Pencil size={16} className="mr-1" />
+                    Editar
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
