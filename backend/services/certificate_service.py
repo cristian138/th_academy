@@ -235,11 +235,27 @@ class CertificateService:
             f'Se expide el presente certificado a solicitud del interesado, en el municipio de Sesquile, Cundinamarca, ' +
             f'a los {today.day} dias del mes de {self._format_date(today).split(" de ")[1].split(" de ")[0]} de {today.year}.'
         )
-        pdf.ln(25)
+        pdf.ln(15)
         
-        # Signature - with proper spacing
+        # Signature section
+        # Check if signature image exists and add it
+        if os.path.exists(self.signature_path):
+            # Center the signature image
+            pdf.ln(5)
+            # Get page width and calculate center position
+            page_width = pdf.w
+            img_width = 50  # Width of signature image in mm
+            x_position = (page_width - img_width) / 2
+            pdf.image(self.signature_path, x=x_position, y=pdf.get_y(), w=img_width)
+            pdf.ln(25)  # Space after signature image
+        else:
+            # No signature image, show line for manual signature
+            pdf.ln(10)
+            pdf.set_font('Helvetica', 'B', 11)
+            pdf.cell(0, 6, '____________________________________', 0, 1, 'C')
+        
+        # Signature text
         pdf.set_font('Helvetica', 'B', 11)
-        pdf.cell(0, 6, '____________________________________', 0, 1, 'C')
         pdf.cell(0, 6, legal_rep_name.upper(), 0, 1, 'C')
         pdf.set_font('Helvetica', '', 10)
         pdf.cell(0, 5, 'Representante Legal', 0, 1, 'C')
