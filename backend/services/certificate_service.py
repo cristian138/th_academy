@@ -28,9 +28,9 @@ class CertificatePDF(FPDF):
         
         self.set_font('Helvetica', '', 10)
         self.set_text_color(100, 100, 100)
-        self.cell(0, 5, 'NIT: 901.XXX.XXX-X', 0, 1, 'C')
-        self.cell(0, 5, 'Direccion: Calle XX # XX-XX, Ciudad', 0, 1, 'C')
-        self.cell(0, 5, 'Telefono: (XXX) XXX-XXXX', 0, 1, 'C')
+        self.cell(0, 5, 'NIT: 901.863.346-4', 0, 1, 'C')
+        self.cell(0, 5, 'Calle 4 #4-46, Sesquile, Cundinamarca', 0, 1, 'C')
+        self.cell(0, 5, 'Telefono: 311 454 0684', 0, 1, 'C')
         
         # Line separator
         self.ln(5)
@@ -40,15 +40,15 @@ class CertificatePDF(FPDF):
         self.ln(10)
     
     def footer(self):
-        self.set_y(-30)
+        self.set_y(-25)
         self.set_draw_color(0, 45, 84)
         self.set_line_width(0.3)
         self.line(10, self.get_y(), 200, self.get_y())
-        self.ln(5)
+        self.ln(3)
         self.set_font('Helvetica', 'I', 8)
         self.set_text_color(128, 128, 128)
-        self.cell(0, 5, 'Este certificado se expide a solicitud del interesado.', 0, 1, 'C')
-        self.cell(0, 5, f'Generado el {datetime.now().strftime("%d de %B de %Y")} - Academia Jotuns Club SAS', 0, 1, 'C')
+        self.cell(0, 4, 'Este certificado se expide a solicitud del interesado.', 0, 1, 'C')
+        self.cell(0, 4, 'Academia Jotuns Club SAS - NIT 901.863.346-4', 0, 1, 'C')
 
 
 class CertificateService:
