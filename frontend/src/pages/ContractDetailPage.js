@@ -669,6 +669,25 @@ export const ContractDetailPage = () => {
                     Contrato activo
                   </div>
                 )}
+
+                {/* Generar Certificado Laboral - Solo para contratos activos o completados */}
+                {(contract.status === 'active' || contract.status === 'signed' || contract.status === 'completed') && (
+                  <a
+                    href={contractsAPI.generateCertificate(contract.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full"
+                    data-testid="generate-certificate-btn"
+                  >
+                    <Button
+                      variant="outline"
+                      className="w-full border-brand-navy text-brand-navy hover:bg-brand-navy/5 rounded-sm"
+                    >
+                      <FileText size={18} className="mr-2" />
+                      Generar Certificado Laboral
+                    </Button>
+                  </a>
+                )}
               </CardContent>
             </Card>
           </div>
