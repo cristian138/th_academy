@@ -67,6 +67,16 @@ export const ContractDetailPage = () => {
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [reviewingDoc, setReviewingDoc] = useState(null);
   const [reviewNotes, setReviewNotes] = useState('');
+  
+  // State for edit contract dialog
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editData, setEditData] = useState({
+    title: '',
+    description: '',
+    end_date: '',
+    monthly_payment: '',
+    payment_per_session: ''
+  });
 
   const loadContract = async () => {
     try {
