@@ -875,6 +875,7 @@ async def generate_labor_certificate(
             collaborator_name=collaborator.get("name", ""),
             collaborator_id=collaborator.get("identification", collaborator.get("id", "")),
             contract_title=contract.get("title", ""),
+            contract_description=contract.get("description", ""),
             contract_type=contract.get("contract_type", "service"),
             start_date=contract.get("start_date"),
             end_date=contract.get("end_date"),
