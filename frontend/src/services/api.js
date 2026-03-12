@@ -75,6 +75,10 @@ export const contractsAPI = {
   downloadFile: (fileId) => {
     const token = localStorage.getItem('token');
     return `${process.env.REACT_APP_BACKEND_URL}/api/files/view/${fileId}?token=${token}`;
+  },
+  generateCertificate: (contractId) => {
+    const token = localStorage.getItem('token');
+    return `${process.env.REACT_APP_BACKEND_URL}/api/contracts/${contractId}/certificate?token=${token}`;
   }
 };
 
