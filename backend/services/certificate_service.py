@@ -54,6 +54,7 @@ class CertificatePDF(FPDF):
 class CertificateService:
     def __init__(self):
         self.logo_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'logo.png')
+        self.signature_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'signature.png')
         # Create assets directory if not exists
         assets_dir = os.path.join(os.path.dirname(__file__), '..', 'assets')
         os.makedirs(assets_dir, exist_ok=True)
