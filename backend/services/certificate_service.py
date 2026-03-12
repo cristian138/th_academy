@@ -15,40 +15,46 @@ class CertificatePDF(FPDF):
     def __init__(self, logo_path: Optional[str] = None):
         super().__init__()
         self.logo_path = logo_path
+        self.set_auto_page_break(auto=True, margin=30)
         
     def header(self):
-        # Logo
+        # Logo centrado
         if self.logo_path and os.path.exists(self.logo_path):
-            self.image(self.logo_path, 10, 8, 40)
+            # Centrar logo
+            page_width = self.w
+            logo_width = 35
+            x_position = (page_width - logo_width) / 2
+            self.image(self.logo_path, x=x_position, y=8, w=logo_width)
+            self.ln(30)
         
         # Company name
-        self.set_font('Helvetica', 'B', 16)
+        self.set_font('Helvetica', 'B', 14)
         self.set_text_color(0, 45, 84)  # #002d54
-        self.cell(0, 10, 'ACADEMIA JOTUNS CLUB SAS', 0, 1, 'C')
+        self.cell(0, 6, 'ACADEMIA JOTUNS CLUB SAS', 0, 1, 'C')
         
-        self.set_font('Helvetica', '', 10)
+        self.set_font('Helvetica', '', 9)
         self.set_text_color(100, 100, 100)
-        self.cell(0, 5, 'NIT: 901.863.346-4', 0, 1, 'C')
-        self.cell(0, 5, 'Calle 4 #4-46, Sesquile, Cundinamarca', 0, 1, 'C')
-        self.cell(0, 5, 'Telefono: 311 454 0684', 0, 1, 'C')
+        self.cell(0, 4, 'NIT: 901.863.346-4', 0, 1, 'C')
+        self.cell(0, 4, 'Calle 4 #4-46, Sesquile, Cundinamarca', 0, 1, 'C')
+        self.cell(0, 4, 'Telefono: 311 454 0684', 0, 1, 'C')
         
         # Line separator
-        self.ln(5)
+        self.ln(3)
         self.set_draw_color(0, 45, 84)
         self.set_line_width(0.5)
-        self.line(10, self.get_y(), 200, self.get_y())
-        self.ln(10)
+        self.line(15, self.get_y(), 195, self.get_y())
+        self.ln(8)
     
     def footer(self):
-        self.set_y(-25)
+        self.set_y(-20)
         self.set_draw_color(0, 45, 84)
         self.set_line_width(0.3)
-        self.line(10, self.get_y(), 200, self.get_y())
+        self.line(15, self.get_y(), 195, self.get_y())
         self.ln(3)
-        self.set_font('Helvetica', 'I', 8)
+        self.set_font('Helvetica', 'I', 7)
         self.set_text_color(128, 128, 128)
-        self.cell(0, 4, 'Este certificado se expide a solicitud del interesado.', 0, 1, 'C')
-        self.cell(0, 4, 'Academia Jotuns Club SAS - NIT 901.863.346-4', 0, 1, 'C')
+        self.cell(0, 3, 'Este certificado se expide a solicitud del interesado.', 0, 1, 'C')
+        self.cell(0, 3, 'Academia Jotuns Club SAS - NIT 901.863.346-4', 0, 1, 'C')
 
 
 class CertificateService:
@@ -76,7 +82,6 @@ class CertificateService:
     
     def _number_to_words(self, number: float) -> str:
         """Convert number to Spanish words (simplified)"""
-        # Simplified version for common amounts
         units = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE']
         tens = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA']
         teens = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISEIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE']
@@ -145,37 +150,37 @@ class CertificateService:
         pdf.add_page()
         
         # Title
-        pdf.set_font('Helvetica', 'B', 18)
+        pdf.set_font('Helvetica', 'B', 16)
         pdf.set_text_color(0, 45, 84)
-        pdf.cell(0, 15, 'CERTIFICADO LABORAL', 0, 1, 'C')
-        pdf.ln(3)
+        pdf.cell(0, 10, 'CERTIFICADO LABORAL', 0, 1, 'C')
+        pdf.ln(2)
         
         # Subtitle - Contract type
-        pdf.set_font('Helvetica', 'B', 12)
+        pdf.set_font('Helvetica', 'B', 11)
         pdf.set_text_color(0, 45, 84)
-        pdf.cell(0, 8, 'CONTRATO POR PRESTACION DE SERVICIOS', 0, 1, 'C')
-        pdf.ln(8)
+        pdf.cell(0, 6, 'CONTRATO POR PRESTACION DE SERVICIOS', 0, 1, 'C')
+        pdf.ln(6)
         
         # Certificate body
-        pdf.set_font('Helvetica', '', 11)
+        pdf.set_font('Helvetica', '', 10)
         pdf.set_text_color(0, 0, 0)
         
         # Introduction
-        pdf.multi_cell(0, 6, 
+        pdf.multi_cell(0, 5, 
             'El suscrito Representante Legal de ACADEMIA JOTUNS CLUB SAS, ' +
             'sociedad legalmente constituida, identificada con NIT 901.863.346-4, certifica que:'
         )
-        pdf.ln(6)
+        pdf.ln(5)
         
         # Collaborator info
         pdf.set_font('Helvetica', 'B', 11)
         pdf.cell(0, 6, f'{collaborator_name.upper()}', 0, 1, 'C')
-        pdf.set_font('Helvetica', '', 11)
-        pdf.cell(0, 6, f'Identificado(a) con documento No. {collaborator_id}', 0, 1, 'C')
-        pdf.ln(6)
+        pdf.set_font('Helvetica', '', 10)
+        pdf.cell(0, 5, f'Identificado(a) con documento No. {collaborator_id}', 0, 1, 'C')
+        pdf.ln(5)
         
         # Contract details
-        pdf.set_font('Helvetica', '', 11)
+        pdf.set_font('Helvetica', '', 10)
         
         # Determine status text
         if end_date:
@@ -183,97 +188,102 @@ class CertificateService:
         else:
             status_text = "presta"
         
-        pdf.multi_cell(0, 6,
+        pdf.multi_cell(0, 5,
             f'{status_text.upper()} sus servicios a nuestra organizacion mediante CONTRATO DE PRESTACION DE SERVICIOS.'
         )
         pdf.ln(4)
         
         # Fechas del contrato
-        pdf.set_font('Helvetica', 'B', 11)
+        pdf.set_font('Helvetica', 'B', 10)
         pdf.cell(0, 6, 'VIGENCIA DEL CONTRATO:', 0, 1, 'L')
-        pdf.set_font('Helvetica', '', 11)
-        pdf.cell(50, 6, 'Fecha de inicio:', 0, 0, 'L')
-        pdf.cell(0, 6, self._format_date(start_date).upper(), 0, 1, 'L')
-        pdf.cell(50, 6, 'Fecha de finalizacion:', 0, 0, 'L')
+        pdf.set_font('Helvetica', '', 10)
+        pdf.cell(55, 5, 'Fecha de inicio:', 0, 0, 'L')
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.cell(0, 5, self._format_date(start_date).upper(), 0, 1, 'L')
+        pdf.set_font('Helvetica', '', 10)
+        pdf.cell(55, 5, 'Fecha de finalizacion:', 0, 0, 'L')
+        pdf.set_font('Helvetica', 'B', 10)
         if end_date:
-            pdf.cell(0, 6, self._format_date(end_date).upper(), 0, 1, 'L')
+            pdf.cell(0, 5, self._format_date(end_date).upper(), 0, 1, 'L')
         else:
-            pdf.cell(0, 6, 'INDEFINIDO', 0, 1, 'L')
+            pdf.cell(0, 5, 'INDEFINIDO', 0, 1, 'L')
         pdf.ln(4)
         
-        # OBJETO del contrato - usar la descripción del contrato
-        pdf.set_font('Helvetica', 'B', 11)
+        # OBJETO del contrato
+        pdf.set_font('Helvetica', 'B', 10)
         pdf.cell(0, 6, 'OBJETO:', 0, 1, 'L')
-        pdf.set_font('Helvetica', '', 10)
-        # Use description if available, otherwise use title
+        pdf.set_font('Helvetica', '', 9)
         objeto_text = contract_description if contract_description else contract_title
-        pdf.multi_cell(0, 5, objeto_text)
+        pdf.multi_cell(0, 4, objeto_text)
         pdf.ln(4)
         
         # Payment information
-        pdf.set_font('Helvetica', 'B', 11)
-        pdf.cell(0, 8, 'HONORARIOS:', 0, 1, 'L')
-        pdf.set_font('Helvetica', '', 11)
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.cell(0, 6, 'HONORARIOS:', 0, 1, 'L')
+        pdf.set_font('Helvetica', '', 10)
         
         if payment_per_session and payment_per_session > 0:
             amount_words = self._number_to_words(payment_per_session)
-            pdf.multi_cell(0, 6,
+            pdf.multi_cell(0, 5,
                 f'El contratista recibe honorarios por valor de {self._format_currency(payment_per_session)} ' +
                 f'({amount_words} PESOS M/CTE) por cada sesion o servicio prestado.'
             )
         elif monthly_payment and monthly_payment > 0:
             amount_words = self._number_to_words(monthly_payment)
-            pdf.multi_cell(0, 6,
+            pdf.multi_cell(0, 5,
                 f'El contratista recibe honorarios mensuales por valor de {self._format_currency(monthly_payment)} ' +
                 f'({amount_words} PESOS M/CTE).'
             )
         
-        pdf.ln(6)
+        pdf.ln(4)
         
         # Legal note
-        pdf.set_font('Helvetica', 'I', 9)
+        pdf.set_font('Helvetica', 'I', 8)
         pdf.set_text_color(80, 80, 80)
-        pdf.multi_cell(0, 5,
+        pdf.multi_cell(0, 4,
             'NOTA: El presente contrato es de naturaleza civil y no genera relacion laboral. ' +
             'El contratista es responsable del pago de sus propias obligaciones de seguridad social ' +
             '(salud, pension y ARL) conforme a la normatividad vigente.'
         )
-        pdf.ln(8)
+        pdf.ln(5)
         
         # Issue statement
-        pdf.set_font('Helvetica', '', 11)
+        pdf.set_font('Helvetica', '', 10)
         pdf.set_text_color(0, 0, 0)
         today = datetime.now()
-        pdf.multi_cell(0, 6,
+        pdf.multi_cell(0, 5,
             f'Se expide el presente certificado a solicitud del interesado, en el municipio de Sesquile, Cundinamarca, ' +
             f'a los {today.day} dias del mes de {self._format_date(today).split(" de ")[1].split(" de ")[0]} de {today.year}.'
         )
-        pdf.ln(15)
+        
+        # Check if we need a new page for signature
+        if pdf.get_y() > 220:
+            pdf.add_page()
+            pdf.ln(20)
+        else:
+            pdf.ln(15)
         
         # Signature section
-        # Check if signature image exists and add it
         if os.path.exists(self.signature_path):
             # Center the signature image
-            pdf.ln(5)
-            # Get page width and calculate center position
             page_width = pdf.w
-            img_width = 50  # Width of signature image in mm
+            img_width = 45
             x_position = (page_width - img_width) / 2
             pdf.image(self.signature_path, x=x_position, y=pdf.get_y(), w=img_width)
-            pdf.ln(25)  # Space after signature image
+            pdf.ln(22)
         else:
-            # No signature image, show line for manual signature
-            pdf.ln(10)
-            pdf.set_font('Helvetica', 'B', 11)
-            pdf.cell(0, 6, '____________________________________', 0, 1, 'C')
+            pdf.ln(8)
+            pdf.set_font('Helvetica', 'B', 10)
+            pdf.cell(0, 5, '____________________________________', 0, 1, 'C')
+            pdf.ln(2)
         
         # Signature text
-        pdf.set_font('Helvetica', 'B', 11)
-        pdf.cell(0, 6, legal_rep_name.upper(), 0, 1, 'C')
-        pdf.set_font('Helvetica', '', 10)
-        pdf.cell(0, 5, 'Representante Legal', 0, 1, 'C')
-        pdf.cell(0, 5, 'ACADEMIA JOTUNS CLUB SAS', 0, 1, 'C')
-        pdf.cell(0, 5, 'NIT 901.863.346-4', 0, 1, 'C')
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.cell(0, 5, legal_rep_name.upper(), 0, 1, 'C')
+        pdf.set_font('Helvetica', '', 9)
+        pdf.cell(0, 4, 'Representante Legal', 0, 1, 'C')
+        pdf.cell(0, 4, 'ACADEMIA JOTUNS CLUB SAS', 0, 1, 'C')
+        pdf.cell(0, 4, 'NIT 901.863.346-4', 0, 1, 'C')
         
         # Return PDF as bytes
         return bytes(pdf.output())
