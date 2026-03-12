@@ -825,6 +825,74 @@ async def upload_signed_contract(
     
     return {"message": "Signed contract uploaded successfully", "file_id": result["id"]}
 
+@app.get("/api/contracts/{contract_id}/certificate")
+async def generate_labor_certificate(
+    contract_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Generate a labor certificate for a contract"""
+    db = await get_database()
+    
+    # Get contract
+    contract = await db.contracts.find_one({"id": contract_id})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    # Permission check:
+    # - Collaborator can only generate their own certificate
+    # - Legal rep and superadmin can generate any certificate
+    if current_user.role == UserRole.COLLABORATOR:
+        if contract["collaborator_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="Solo puede generar certificados de sus propios contratos")
+    elif current_user.role not in [UserRole.LEGAL_REP, UserRole.SUPERADMIN]:
+        raise HTTPException(status_code=403, detail="No tiene permisos para generar certificados")
+    
+    # Get collaborator info
+    collaborator = await db.users.find_one({"id": contract["collaborator_id"]})
+    if not collaborator:
+        raise HTTPException(status_code=404, detail="Collaborator not found")
+    
+    # Get legal representative for signature
+    legal_rep = await db.users.find_one({"role": UserRole.LEGAL_REP})
+    legal_rep_name = legal_rep.get("name", "Representante Legal") if legal_rep else "Representante Legal"
+    
+    # Generate certificate
+    try:
+        pdf_bytes = certificate_service.generate_labor_certificate(
+            collaborator_name=collaborator.get("name", ""),
+            collaborator_id=collaborator.get("identification", collaborator.get("id", "")),
+            contract_title=contract.get("title", ""),
+            contract_type=contract.get("contract_type", "service"),
+            start_date=contract.get("start_date"),
+            end_date=contract.get("end_date"),
+            monthly_payment=contract.get("monthly_payment"),
+            payment_per_session=contract.get("payment_per_session"),
+            legal_rep_name=legal_rep_name
+        )
+    except Exception as e:
+        logger.error(f"Error generating certificate: {e}")
+        raise HTTPException(status_code=500, detail="Error al generar el certificado")
+    
+    # Log the action
+    await audit_service.log(
+        user_id=current_user.id,
+        action="generate_certificate",
+        resource_type="contract",
+        resource_id=contract_id,
+        details={"collaborator_id": contract["collaborator_id"]}
+    )
+    
+    # Return PDF
+    filename = f"certificado_laboral_{collaborator.get('name', 'colaborador').replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf"
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{filename}"'
+        }
+    )
+
 # ============= DOCUMENT ROUTES =============
 
 # Documentos obligatorios y opcionales
