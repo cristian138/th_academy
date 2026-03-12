@@ -849,6 +849,86 @@ export const ContractDetailPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Contract Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-brand-navy">Editar Contrato</DialogTitle>
+            <DialogDescription>
+              Modifique la información del contrato
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Título</Label>
+              <Input
+                id="edit-title"
+                value={editData.title}
+                onChange={(e) => setEditData({...editData, title: e.target.value})}
+                className="rounded-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Descripción / Objeto</Label>
+              <Textarea
+                id="edit-description"
+                value={editData.description}
+                onChange={(e) => setEditData({...editData, description: e.target.value})}
+                className="rounded-sm min-h-[100px]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-end-date">Fecha de Finalización</Label>
+              <Input
+                id="edit-end-date"
+                type="date"
+                value={editData.end_date}
+                onChange={(e) => setEditData({...editData, end_date: e.target.value})}
+                className="rounded-sm"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-monthly">Pago Mensual</Label>
+                <Input
+                  id="edit-monthly"
+                  type="number"
+                  value={editData.monthly_payment}
+                  onChange={(e) => setEditData({...editData, monthly_payment: e.target.value})}
+                  className="rounded-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-session">Pago por Sesión</Label>
+                <Input
+                  id="edit-session"
+                  type="number"
+                  value={editData.payment_per_session}
+                  onChange={(e) => setEditData({...editData, payment_per_session: e.target.value})}
+                  className="rounded-sm"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowEditDialog(false)}
+              className="flex-1 rounded-sm"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleUpdateContract}
+              disabled={actionLoading}
+              className="flex-1 bg-brand-navy hover:bg-brand-navy/90 text-white rounded-sm"
+            >
+              {actionLoading ? 'Guardando...' : 'Guardar Cambios'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
