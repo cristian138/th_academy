@@ -131,6 +131,7 @@ class CertificateService:
         collaborator_name: str,
         collaborator_id: str,
         contract_title: str,
+        contract_description: str,
         contract_type: str,
         start_date: datetime,
         end_date: Optional[datetime],
