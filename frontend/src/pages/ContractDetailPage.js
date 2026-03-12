@@ -227,6 +227,38 @@ export const ContractDetailPage = () => {
     }
   };
 
+  const openEditDialog = () => {
+    setEditData({
+      title: contract.title || '',
+      description: contract.description || '',
+      end_date: contract.end_date ? contract.end_date.split('T')[0] : '',
+      monthly_payment: contract.monthly_payment || '',
+      payment_per_session: contract.payment_per_session || ''
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateContract = async () => {
+    setActionLoading(true);
+    try {
+      const updateData = {};
+      if (editData.title) updateData.title = editData.title;
+      if (editData.description) updateData.description = editData.description;
+      if (editData.end_date) updateData.end_date = editData.end_date;
+      if (editData.monthly_payment) updateData.monthly_payment = parseFloat(editData.monthly_payment);
+      if (editData.payment_per_session) updateData.payment_per_session = parseFloat(editData.payment_per_session);
+      
+      await contractsAPI.update(id, updateData);
+      toast.success('Contrato actualizado exitosamente');
+      setShowEditDialog(false);
+      loadContract();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al actualizar el contrato');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
