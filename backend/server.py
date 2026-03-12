@@ -2237,3 +2237,94 @@ async def view_file(file_id: str, token: str):
         media_type=media_type,
         headers={"Content-Disposition": "inline"}
     )
+
+# ============= SETTINGS / CONFIGURATION ROUTES =============
+
+SIGNATURE_FILE_PATH = os.path.join(os.path.dirname(__file__), 'assets', 'signature.png')
+
+@app.post("/api/settings/signature")
+async def upload_signature(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload signature image for certificates (only superadmin and legal_rep)"""
+    # Check permissions
+    if current_user.role not in [UserRole.SUPERADMIN, UserRole.LEGAL_REP]:
+        raise HTTPException(status_code=403, detail="Solo el Superadmin o Representante Legal pueden cargar la firma")
+    
+    # Validate file type
+    if not file.content_type in ['image/png', 'image/jpeg', 'image/jpg']:
+        raise HTTPException(status_code=400, detail="Solo se permiten imágenes PNG o JPG")
+    
+    # Create assets directory if not exists
+    assets_dir = os.path.dirname(SIGNATURE_FILE_PATH)
+    os.makedirs(assets_dir, exist_ok=True)
+    
+    # Read and save file
+    file_content = await file.read()
+    
+    # Save as PNG for consistency
+    import io
+    from PIL import Image
+    
+    try:
+        img = Image.open(io.BytesIO(file_content))
+        # Convert to RGBA if needed (for transparency support)
+        if img.mode != 'RGBA':
+            img = img.convert('RGBA')
+        # Save as PNG
+        img.save(SIGNATURE_FILE_PATH, 'PNG')
+    except Exception as e:
+        logger.error(f"Error processing signature image: {e}")
+        raise HTTPException(status_code=400, detail="Error al procesar la imagen. Asegúrese de que sea una imagen válida.")
+    
+    await audit_service.log(
+        user_id=current_user.id,
+        action="upload_signature",
+        resource_type="settings",
+        resource_id="signature"
+    )
+    
+    return {"message": "Firma cargada exitosamente"}
+
+@app.get("/api/settings/signature")
+async def get_signature(
+    current_user: User = Depends(get_current_user)
+):
+    """Get current signature image"""
+    if not os.path.exists(SIGNATURE_FILE_PATH):
+        raise HTTPException(status_code=404, detail="No hay firma configurada")
+    
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path=SIGNATURE_FILE_PATH,
+        media_type="image/png",
+        headers={"Content-Disposition": "inline"}
+    )
+
+@app.delete("/api/settings/signature")
+async def delete_signature(
+    current_user: User = Depends(get_current_user)
+):
+    """Delete signature image"""
+    if current_user.role not in [UserRole.SUPERADMIN, UserRole.LEGAL_REP]:
+        raise HTTPException(status_code=403, detail="Solo el Superadmin o Representante Legal pueden eliminar la firma")
+    
+    if os.path.exists(SIGNATURE_FILE_PATH):
+        os.remove(SIGNATURE_FILE_PATH)
+    
+    await audit_service.log(
+        user_id=current_user.id,
+        action="delete_signature",
+        resource_type="settings",
+        resource_id="signature"
+    )
+    
+    return {"message": "Firma eliminada exitosamente"}
+
+@app.get("/api/settings/signature/exists")
+async def check_signature_exists(
+    current_user: User = Depends(get_current_user)
+):
+    """Check if signature image exists"""
+    return {"exists": os.path.exists(SIGNATURE_FILE_PATH)}
