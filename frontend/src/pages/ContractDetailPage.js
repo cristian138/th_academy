@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, CheckCircle2, Upload, FileText, Download, XCircle, Clock, AlertCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Upload, FileText, Download, XCircle, Clock, AlertCircle, Trash2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getStatusBadge = (status) => {
