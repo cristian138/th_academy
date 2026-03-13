@@ -67,15 +67,7 @@ export const VerifyCertificatePage = () => {
                 
                 <p className="text-sm text-slate-500 mb-1">Fecha de generación:</p>
                 <p className="font-semibold text-slate-800">
-                  {result.data?.generated_at ? 
-                    new Date(result.data.generated_at).toLocaleDateString('es-CO', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    }) : 'N/A'
-                  }
+                  {result.data?.generated_at || 'N/A'}
                 </p>
               </div>
               
