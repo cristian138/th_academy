@@ -10,8 +10,12 @@ from datetime import datetime
 from fpdf import FPDF
 from typing import Optional
 import logging
+import pytz
 
 logger = logging.getLogger(__name__)
+
+# Colombia timezone
+COLOMBIA_TZ = pytz.timezone('America/Bogota')
 
 class CertificatePDF(FPDF):
     def __init__(self, logo_path: Optional[str] = None):
