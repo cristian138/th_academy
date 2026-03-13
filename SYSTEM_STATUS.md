@@ -242,8 +242,8 @@ El sistema incluye datos iniciales para testing:
 - ✅ Microsoft Graph: Credenciales configuradas
 
 ### URL de Producción
-- **Frontend**: https://sportacademy-7.preview.emergentagent.com
-- **API Backend**: https://sportacademy-7.preview.emergentagent.com/api
+- **Frontend**: https://hr-academy-hub.preview.emergentagent.com
+- **API Backend**: https://hr-academy-hub.preview.emergentagent.com/api
 
 ## 📞 Credenciales de Acceso
 
