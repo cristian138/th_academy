@@ -188,6 +188,31 @@ export const PaymentsPage = () => {
     }
   };
 
+  const openEditDialog = (payment) => {
+    setEditingPayment(payment);
+    setEditData({
+      amount: payment.amount || '',
+      description: payment.description || ''
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleUpdatePayment = async () => {
+    try {
+      const updateData = {};
+      if (editData.amount) updateData.amount = parseFloat(editData.amount);
+      if (editData.description !== undefined) updateData.description = editData.description;
+      
+      await paymentsAPI.update(editingPayment.id, updateData);
+      toast.success('Cuenta de cobro actualizada');
+      setShowEditDialog(false);
+      setEditingPayment(null);
+      loadPayments();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al actualizar cuenta de cobro');
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
