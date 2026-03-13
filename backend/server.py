@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File, R
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import Response
+from pydantic import BaseModel
 from contextlib import asynccontextmanager
 from database import connect_db, close_db, get_database
 from config import settings
@@ -17,6 +18,7 @@ from services.email_service import email_service
 from services.storage_service import storage_service
 from services.audit_service import audit_service
 from services.certificate_service import certificate_service
+from services.presupuesto_integration import notify_presupuesto_payment_approved
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 import logging
@@ -1726,13 +1728,16 @@ async def approve_payment(
     if payment["status"] != PaymentStatus.PENDING_APPROVAL:
         raise HTTPException(status_code=400, detail="Payment is not pending approval")
     
+    approval_time = datetime.now(timezone.utc)
+    
     # Update payment to approved
     await db.payments.update_one(
         {"id": payment_id},
         {"$set": {
             "status": PaymentStatus.APPROVED,
             "approved_by": current_user.id,
-            "updated_at": datetime.now(timezone.utc)
+            "approved_at": approval_time,
+            "updated_at": approval_time
         }}
     )
     
@@ -1746,8 +1751,39 @@ async def approve_payment(
         "message": f"Su cuenta de cobro por ${payment['amount']} ha sido aprobada",
         "notification_type": "payment_approved",
         "read": False,
-        "created_at": datetime.now(timezone.utc)
+        "created_at": approval_time
     })
+    
+    # ============== INTEGRACIÓN CON SISTEMA DE PRESUPUESTO ==============
+    presupuesto_result = await notify_presupuesto_payment_approved(
+        payment_id=payment_id,
+        collaborator_name=collaborator.get("name", "Colaborador"),
+        amount=payment["amount"],
+        approval_date=approval_time,
+        payment_description=payment.get("description")
+    )
+    
+    if presupuesto_result.get("success"):
+        await db.payments.update_one(
+            {"id": payment_id},
+            {"$set": {
+                "presupuesto_budget_id": presupuesto_result.get("presupuesto_id"),
+                "presupuesto_monthly_id": presupuesto_result.get("monthly_budget_id"),
+                "presupuesto_synced": True,
+                "presupuesto_synced_at": approval_time
+            }}
+        )
+        logger.info(f"Pago {payment_id} sincronizado con presupuesto: {presupuesto_result}")
+    else:
+        logger.warning(f"No se pudo sincronizar pago {payment_id} con presupuesto: {presupuesto_result.get('message')}")
+        await db.payments.update_one(
+            {"id": payment_id},
+            {"$set": {
+                "presupuesto_synced": False,
+                "presupuesto_sync_error": presupuesto_result.get("message")
+            }}
+        )
+    # ====================================================================
     
     # Send styled email
     email_content = f'''
@@ -1783,10 +1819,18 @@ async def approve_payment(
         user_id=current_user.id,
         action="approve_payment",
         resource_type="payment",
-        resource_id=payment_id
+        resource_id=payment_id,
+        details={
+            "presupuesto_synced": presupuesto_result.get("success", False),
+            "presupuesto_budget_id": presupuesto_result.get("presupuesto_id")
+        }
     )
     
-    return {"message": "Payment approved successfully"}
+    return {
+        "message": "Payment approved successfully",
+        "presupuesto_synced": presupuesto_result.get("success", False),
+        "presupuesto_message": presupuesto_result.get("message")
+    }
 
 @app.post("/api/payments/{payment_id}/reject")
 async def reject_payment(
@@ -2447,3 +2491,260 @@ async def check_signature_exists(
 ):
     """Check if signature image exists"""
     return {"exists": os.path.exists(SIGNATURE_FILE_PATH)}
+
+
+# ============== WEBHOOK DESDE SISTEMA DE PRESUPUESTO ==============
+
+class PresupuestoWebhookPayload(BaseModel):
+    source: str
+    event_type: str
+    payment_id: str
+    support_file_url: Optional[str] = None
+    support_file_name: Optional[str] = None
+    payment_date: Optional[str] = None
+    paid_value: Optional[float] = None
+    payment_method: Optional[str] = None
+    verification_code: Optional[str] = None
+
+@app.post("/api/webhook/presupuesto")
+async def webhook_from_presupuesto(payload: PresupuestoWebhookPayload):
+    """
+    Webhook receptor desde el sistema de presupuesto.
+    Cuando se genera el soporte de pago en presupuesto, este endpoint actualiza
+    el pago correspondiente en el sistema de Talento Humano.
+    """
+    db = await get_database()
+    
+    if payload.source != "presupuesto":
+        raise HTTPException(status_code=400, detail="Fuente no válida")
+    
+    if payload.event_type == "payment_support_uploaded":
+        payment = await db.payments.find_one({"id": payload.payment_id})
+        if not payment:
+            logger.warning(f"Pago no encontrado para webhook: {payload.payment_id}")
+            raise HTTPException(status_code=404, detail="Pago no encontrado")
+        
+        update_data = {
+            "status": PaymentStatus.PAID,
+            "voucher_file_url": payload.support_file_url,
+            "voucher_file_name": payload.support_file_name,
+            "presupuesto_payment_date": payload.payment_date,
+            "presupuesto_paid_value": payload.paid_value,
+            "presupuesto_payment_method": payload.payment_method,
+            "presupuesto_verification_code": payload.verification_code,
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        await db.payments.update_one(
+            {"id": payload.payment_id},
+            {"$set": update_data}
+        )
+        
+        contract = await db.contracts.find_one({"id": payment["contract_id"]})
+        if contract:
+            collaborator = await db.users.find_one({"id": contract["collaborator_id"]})
+            
+            await db.notifications.insert_one({
+                "user_id": contract["collaborator_id"],
+                "title": "Pago Completado",
+                "message": f"Su pago por ${payment['amount']:,.0f} COP ha sido procesado. El soporte está disponible.",
+                "notification_type": "payment_completed",
+                "read": False,
+                "created_at": datetime.now(timezone.utc)
+            })
+            
+            if collaborator and collaborator.get("email"):
+                email_content = f'''
+                <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+                    Estimado(a) <strong>{collaborator.get('name', 'Colaborador')}</strong>,
+                </p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ecfdf5;border-left:4px solid #10b981;border-radius:4px;margin:25px 0;">
+                    <tr>
+                        <td style="padding:15px 20px;">
+                            <p style="color:#065f46;font-size:16px;margin:0;font-weight:bold;">
+                                Su pago por ${payment['amount']:,.0f} COP ha sido completado
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 25px 0;">
+                    El soporte de pago ya está disponible en el sistema. Puede descargarlo desde su panel de pagos.
+                </p>
+                '''
+                email_body = build_styled_email(
+                    title="Pago Completado",
+                    content=email_content,
+                    button_text="Ver Soporte de Pago",
+                    button_url="https://th.academiajotuns.com"
+                )
+                await email_service.send_email(
+                    recipient_email=collaborator["email"],
+                    subject="Pago Completado - Academia Jotuns Club",
+                    body=email_body
+                )
+        
+        logger.info(f"Webhook procesado: pago {payload.payment_id} actualizado con soporte desde presupuesto")
+        
+        return {
+            "success": True,
+            "message": "Pago actualizado con soporte desde presupuesto"
+        }
+    
+    return {"success": False, "message": "Tipo de evento no soportado"}
+
+
+# ============== PANEL DE MONITOREO DE INTEGRACIÓN ==============
+
+@app.get("/api/integration/status")
+async def get_integration_status(
+    current_user: User = Depends(require_role(UserRole.ADMIN))
+):
+    """
+    Obtiene el estado de la integración con el sistema de presupuesto.
+    Muestra pagos sincronizados, pendientes y con errores.
+    """
+    db = await get_database()
+    
+    all_approved = await db.payments.find(
+        {"status": {"$in": ["approved", "paid"]}},
+        {"_id": 0}
+    ).sort("updated_at", -1).to_list(100)
+    
+    synced = []
+    pending = []
+    failed = []
+    
+    for payment in all_approved:
+        payment_info = {
+            "id": payment["id"],
+            "amount": payment.get("amount", 0),
+            "status": payment["status"],
+            "created_at": payment.get("created_at"),
+            "updated_at": payment.get("updated_at"),
+            "presupuesto_synced": payment.get("presupuesto_synced", False),
+            "presupuesto_budget_id": payment.get("presupuesto_budget_id"),
+            "presupuesto_monthly_id": payment.get("presupuesto_monthly_id"),
+            "presupuesto_synced_at": payment.get("presupuesto_synced_at"),
+            "presupuesto_sync_error": payment.get("presupuesto_sync_error"),
+            "voucher_file_url": payment.get("voucher_file_url")
+        }
+        
+        contract = await db.contracts.find_one({"id": payment.get("contract_id")}, {"_id": 0})
+        if contract:
+            collaborator = await db.users.find_one({"id": contract.get("collaborator_id")}, {"_id": 0, "hashed_password": 0})
+            payment_info["collaborator_name"] = collaborator.get("name", "N/A") if collaborator else "N/A"
+            payment_info["contract_title"] = contract.get("title", "N/A")
+        
+        if payment.get("presupuesto_synced"):
+            synced.append(payment_info)
+        elif payment.get("presupuesto_sync_error"):
+            failed.append(payment_info)
+        else:
+            pending.append(payment_info)
+    
+    return {
+        "total_approved": len(all_approved),
+        "synced_count": len(synced),
+        "pending_count": len(pending),
+        "failed_count": len(failed),
+        "synced": synced,
+        "pending": pending,
+        "failed": failed,
+        "presupuesto_url": "https://presupuesto.academiajotuns.com"
+    }
+
+@app.post("/api/integration/retry/{payment_id}")
+async def retry_sync_to_presupuesto(
+    payment_id: str,
+    current_user: User = Depends(require_role(UserRole.ADMIN))
+):
+    """
+    Reintenta sincronizar un pago con el sistema de presupuesto.
+    """
+    db = await get_database()
+    
+    payment = await db.payments.find_one({"id": payment_id})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Pago no encontrado")
+    
+    if payment["status"] not in ["approved", "paid"]:
+        raise HTTPException(status_code=400, detail="Solo se pueden sincronizar pagos aprobados")
+    
+    contract = await db.contracts.find_one({"id": payment["contract_id"]})
+    collaborator = await db.users.find_one({"id": contract["collaborator_id"]})
+    
+    approval_time = payment.get("approved_at") or payment.get("updated_at") or datetime.now(timezone.utc)
+    if isinstance(approval_time, str):
+        approval_time = datetime.fromisoformat(approval_time.replace('Z', '+00:00'))
+    
+    result = await notify_presupuesto_payment_approved(
+        payment_id=payment_id,
+        collaborator_name=collaborator.get("name", "Colaborador"),
+        amount=payment["amount"],
+        approval_date=approval_time,
+        payment_description=payment.get("description")
+    )
+    
+    if result.get("success"):
+        await db.payments.update_one(
+            {"id": payment_id},
+            {"$set": {
+                "presupuesto_budget_id": result.get("presupuesto_id"),
+                "presupuesto_monthly_id": result.get("monthly_budget_id"),
+                "presupuesto_synced": True,
+                "presupuesto_synced_at": datetime.now(timezone.utc),
+                "presupuesto_sync_error": None
+            }}
+        )
+        return {
+            "success": True,
+            "message": "Pago sincronizado exitosamente",
+            "presupuesto_budget_id": result.get("presupuesto_id")
+        }
+    else:
+        await db.payments.update_one(
+            {"id": payment_id},
+            {"$set": {
+                "presupuesto_sync_error": result.get("message"),
+                "presupuesto_synced": False
+            }}
+        )
+        raise HTTPException(status_code=500, detail=result.get("message"))
+
+@app.get("/api/integration/health")
+async def check_presupuesto_health():
+    """
+    Verifica la conectividad con el sistema de presupuesto.
+    """
+    import httpx
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get("https://presupuesto.academiajotuns.com/api/auth/check-users")
+            
+            if response.status_code == 200:
+                return {
+                    "status": "online",
+                    "presupuesto_reachable": True,
+                    "response_time_ms": response.elapsed.total_seconds() * 1000,
+                    "message": "Sistema de presupuesto accesible"
+                }
+            else:
+                return {
+                    "status": "degraded",
+                    "presupuesto_reachable": True,
+                    "http_status": response.status_code,
+                    "message": f"Sistema responde pero con código {response.status_code}"
+                }
+    except httpx.TimeoutException:
+        return {
+            "status": "timeout",
+            "presupuesto_reachable": False,
+            "message": "Timeout al conectar con sistema de presupuesto"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "presupuesto_reachable": False,
+            "message": f"Error de conexión: {str(e)}"
+        }

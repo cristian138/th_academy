@@ -13,6 +13,7 @@ import { ReportsPage } from './pages/ReportsPage';
 import { UsersPage } from './pages/UsersPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { VerifyCertificatePage } from './pages/VerifyCertificatePage';
+import IntegrationMonitorPage from './pages/IntegrationMonitorPage';
 import { Toaster } from '@/components/ui/sonner';
 import './App.css';
 
@@ -100,6 +101,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/integration"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <IntegrationMonitorPage />
               </ProtectedRoute>
             }
           />

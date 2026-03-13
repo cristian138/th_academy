@@ -167,4 +167,11 @@ export const notificationsAPI = {
   markRead: (id) => api.put(`/notifications/${id}/read`)
 };
 
+// Integration
+export const integrationAPI = {
+  getStatus: () => api.get('/integration/status'),
+  getHealth: () => api.get('/integration/health'),
+  retry: (paymentId) => api.post(`/integration/retry/${paymentId}`)
+};
+
 export default api;
