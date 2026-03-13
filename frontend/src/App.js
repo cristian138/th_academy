@@ -12,6 +12,7 @@ import { PaymentsPage } from './pages/PaymentsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { UsersPage } from './pages/UsersPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { VerifyCertificatePage } from './pages/VerifyCertificatePage';
 import { Toaster } from '@/components/ui/sonner';
 import './App.css';
 
@@ -21,6 +22,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/verificar/:code" element={<VerifyCertificatePage />} />
           <Route
             path="/dashboard"
             element={
