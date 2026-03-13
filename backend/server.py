@@ -869,9 +869,13 @@ async def generate_labor_certificate(
     legal_rep = await db.users.find_one({"role": UserRole.LEGAL_REP})
     legal_rep_name = legal_rep.get("name", "Representante Legal") if legal_rep else "Representante Legal"
     
+    # Generate verification code
+    verification_code = str(uuid.uuid4())[:12].upper().replace('-', '')
+    verification_url = f"https://th.academiajotuns.com/verificar/{verification_code}"
+    
     # Generate certificate
     try:
-        pdf_bytes = certificate_service.generate_labor_certificate(
+        pdf_bytes, verification_code = certificate_service.generate_labor_certificate(
             collaborator_name=collaborator.get("name", ""),
             collaborator_id=collaborator.get("identification", collaborator.get("id", "")),
             contract_title=contract.get("title", ""),
@@ -881,11 +885,25 @@ async def generate_labor_certificate(
             end_date=contract.get("end_date"),
             monthly_payment=contract.get("monthly_payment"),
             payment_per_session=contract.get("payment_per_session"),
-            legal_rep_name=legal_rep_name
+            legal_rep_name=legal_rep_name,
+            verification_code=verification_code,
+            verification_url=verification_url
         )
     except Exception as e:
         logger.error(f"Error generating certificate: {e}")
         raise HTTPException(status_code=500, detail="Error al generar el certificado")
+    
+    # Save verification code in database for future verification
+    await db.certificate_verifications.insert_one({
+        "code": verification_code,
+        "contract_id": contract_id,
+        "collaborator_id": contract["collaborator_id"],
+        "collaborator_name": collaborator.get("name", ""),
+        "contract_title": contract.get("title", ""),
+        "generated_at": datetime.now(timezone.utc),
+        "generated_by": current_user_id,
+        "is_valid": True
+    })
     
     # Log the action
     await audit_service.log(
@@ -893,7 +911,7 @@ async def generate_labor_certificate(
         action="generate_certificate",
         resource_type="contract",
         resource_id=contract_id,
-        details={"collaborator_id": contract["collaborator_id"]}
+        details={"collaborator_id": contract["collaborator_id"], "verification_code": verification_code}
     )
     
     # Return PDF
@@ -906,6 +924,38 @@ async def generate_labor_certificate(
             "Content-Disposition": f'inline; filename="{filename}"'
         }
     )
+
+@app.get("/api/certificates/verify/{verification_code}")
+async def verify_certificate(verification_code: str):
+    """Verify a certificate by its verification code (public endpoint)"""
+    db = await get_database()
+    
+    verification = await db.certificate_verifications.find_one(
+        {"code": verification_code.upper()},
+        {"_id": 0}
+    )
+    
+    if not verification:
+        return {
+            "valid": False,
+            "message": "Codigo de verificacion no encontrado"
+        }
+    
+    if not verification.get("is_valid", True):
+        return {
+            "valid": False,
+            "message": "Este certificado ha sido invalidado"
+        }
+    
+    return {
+        "valid": True,
+        "message": "Certificado valido",
+        "data": {
+            "collaborator_name": verification.get("collaborator_name"),
+            "contract_title": verification.get("contract_title"),
+            "generated_at": verification.get("generated_at").isoformat() if verification.get("generated_at") else None
+        }
+    }
 
 # ============= DOCUMENT ROUTES =============
 
