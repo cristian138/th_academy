@@ -438,25 +438,83 @@ mongorestore --db jotuns_talento_humano /var/backups/mongodb/FECHA/jotuns_talent
 
 ## Actualizar la Aplicación
 
+### Actualización Rápida (comando único)
+
 ```bash
+cd /var/www/jotuns-th && \
+sudo -u www-data git pull && \
+cd backend && source venv/bin/activate && \
+pip install -r requirements.txt && \
+sudo supervisorctl restart jotuns-backend && \
+cd ../frontend && sudo -u www-data yarn install && \
+sudo -u www-data yarn build && \
+sudo systemctl reload nginx && \
+echo "Actualización completada"
+```
+
+### Actualización Paso a Paso (recomendado)
+
+```bash
+# 1. Ir al directorio de la aplicación
 cd /var/www/jotuns-th
 
-# Obtener últimos cambios
+# 2. Guardar cambios locales si hay conflictos
+sudo -u www-data git stash
+
+# 3. Obtener últimos cambios
 sudo -u www-data git pull
 
-# Backend
+# 4. Si hubo stash, re-aplicar cambios locales
+sudo -u www-data git stash pop
+
+# 5. Actualizar Backend
 cd backend
 source venv/bin/activate
 pip install -r requirements.txt
 sudo supervisorctl restart jotuns-backend
 
-# Frontend
+# 6. Verificar que el backend inició correctamente
+sleep 3
+curl http://localhost:8002/api/health
+
+# 7. Actualizar Frontend
 cd ../frontend
 sudo -u www-data yarn install
 sudo -u www-data yarn build
 
-# Reiniciar Nginx (opcional)
+# 8. Recargar Nginx
 sudo systemctl reload nginx
+```
+
+### Si hay conflictos de Git
+
+```bash
+cd /var/www/jotuns-th
+
+# Opción A: Descartar cambios locales y usar el remoto
+sudo -u www-data git fetch origin
+sudo -u www-data git reset --hard origin/main
+
+# Opción B: Resolver conflictos manualmente
+sudo -u www-data git pull
+# Editar archivos con conflictos
+sudo -u www-data git add .
+sudo -u www-data git commit -m "Resolver conflictos"
+```
+
+### Verificar después de actualizar
+
+```bash
+# Backend
+curl https://th.academiajotuns.com/api/health
+
+# Integración con presupuesto
+curl https://th.academiajotuns.com/api/integration/health
+
+# Servicios
+sudo supervisorctl status
+sudo systemctl status mongod
+sudo systemctl status nginx
 ```
 
 ---
@@ -510,11 +568,88 @@ sudo certbot --nginx -d th.academiajotuns.com --force-renewal
 | Backend | `/var/www/jotuns-th/backend` |
 | Frontend Build | `/var/www/jotuns-th/frontend/build` |
 | Archivos subidos | `/var/www/jotuns-th/storage` |
+| Firma digital | `/var/www/jotuns-th/storage/signature.png` |
 | Config Nginx | `/etc/nginx/sites-available/jotuns-th` |
 | Config Supervisor | `/etc/supervisor/conf.d/jotuns-backend.conf` |
 | Logs Backend | `/var/log/supervisor/jotuns-backend.*.log` |
 | Logs Nginx | `/var/log/nginx/*.log` |
 | SSL Certificados | `/etc/letsencrypt/live/th.academiajotuns.com/` |
+
+---
+
+## Módulos del Sistema
+
+| Módulo | Descripción | Ruta Frontend |
+|--------|-------------|---------------|
+| Dashboard | Estadísticas generales | `/dashboard` |
+| Contratos | Gestión de contratos y documentos | `/contracts` |
+| Colaboradores | Listado de colaboradores | `/collaborators` |
+| Pagos | Cuentas de cobro y comprobantes | `/payments` |
+| Reportes | Exportación a Excel | `/reports` |
+| Usuarios | Gestión de usuarios y roles | `/users` |
+| Configuración | Firma digital para certificados | `/settings` |
+| Integración | Monitor de sincronización con presupuesto | `/integration` |
+| Certificados | Verificación pública de certificados | `/verificar/:codigo` |
+
+---
+
+## Endpoints de la API
+
+### Autenticación
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Iniciar sesión |
+| POST | `/api/auth/register` | Registrar usuario |
+| GET | `/api/auth/me` | Obtener usuario actual |
+
+### Contratos
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/contracts` | Listar contratos |
+| POST | `/api/contracts` | Crear contrato |
+| GET | `/api/contracts/{id}` | Detalle de contrato |
+| PUT | `/api/contracts/{id}` | Editar contrato |
+| POST | `/api/contracts/{id}/review` | Enviar a revisión |
+| POST | `/api/contracts/{id}/approve` | Aprobar contrato |
+| POST | `/api/contracts/{id}/upload-signed` | Subir contrato firmado |
+| GET | `/api/contracts/{id}/certificate` | Generar certificado laboral |
+
+### Documentos
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/contracts/{id}/documents` | Listar documentos del contrato |
+| POST | `/api/contracts/{id}/documents` | Subir documento |
+| DELETE | `/api/contracts/{id}/documents/{doc_id}` | Eliminar documento |
+| PUT | `/api/documents/{id}/review` | Aprobar/rechazar documento |
+
+### Pagos
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/payments` | Listar pagos |
+| POST | `/api/payments` | Crear cuenta de cobro |
+| PUT | `/api/payments/{id}` | Editar pago (superadmin/contador) |
+| POST | `/api/payments/{id}/upload-bill` | Subir cuenta de cobro PDF |
+| POST | `/api/payments/{id}/approve` | Aprobar cuenta de cobro |
+| POST | `/api/payments/{id}/reject` | Rechazar cuenta de cobro |
+| POST | `/api/payments/{id}/confirm` | Confirmar pago con comprobante |
+
+### Integración con Presupuesto
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/integration/status` | Estado de sincronización |
+| GET | `/api/integration/health` | Conectividad con presupuesto |
+| POST | `/api/integration/retry/{payment_id}` | Reintentar sincronización |
+| POST | `/api/webhook/presupuesto` | Webhook receptor desde presupuesto |
+
+### Otros
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/dashboard/stats` | Estadísticas del dashboard |
+| GET | `/api/reports/export/contracts` | Exportar contratos a Excel |
+| GET | `/api/reports/export/payments` | Exportar pagos a Excel |
+| GET | `/api/notifications` | Listar notificaciones |
+| POST | `/api/settings/signature` | Subir firma digital |
+| GET | `/api/certificates/verify/{code}` | Verificar certificado (público) |
 
 ---
 
