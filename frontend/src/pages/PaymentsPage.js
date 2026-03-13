@@ -448,6 +448,19 @@ export const PaymentsPage = () => {
                       
                       {hasRole('accountant') && (
                         <div className="flex gap-2 pt-2">
+                          {/* Botón Editar - Solo para superadmin/contador */}
+                          {(user.role === 'superadmin' || user.role === 'accountant') && (
+                            <Button
+                              onClick={() => openEditDialog(payment)}
+                              size="sm"
+                              variant="outline"
+                              data-testid={`edit-payment-${payment.id}`}
+                              className="border-slate-300 text-slate-700 hover:bg-slate-50 rounded-sm"
+                            >
+                              <Pencil size={14} className="mr-1" />
+                              Editar
+                            </Button>
+                          )}
                           <Button
                             onClick={() => handleApprovePayment(payment.id)}
                             disabled={approvingPayment === payment.id}
