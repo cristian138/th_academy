@@ -75,14 +75,39 @@ class CertificateService:
             5: 'mayo', 6: 'junio', 7: 'julio', 8: 'agosto',
             9: 'septiembre', 10: 'octubre', 11: 'noviembre', 12: 'diciembre'
         }
+        
+        # Handle None
         if date is None:
             return "INDEFINIDO"
+        
+        # Handle empty string
+        if isinstance(date, str) and date.strip() == '':
+            return "INDEFINIDO"
+        
+        # Handle string dates
         if isinstance(date, str):
             try:
+                # Try ISO format
                 date = datetime.fromisoformat(date.replace('Z', '+00:00'))
             except:
-                return "INDEFINIDO"
-        return f"{date.day} de {months[date.month]} de {date.year}"
+                try:
+                    # Try other common formats
+                    from dateutil import parser
+                    date = parser.parse(date)
+                except:
+                    try:
+                        # Try simple date format
+                        date = datetime.strptime(date.split('T')[0], '%Y-%m-%d')
+                    except:
+                        logger.error(f"Could not parse date: {date}")
+                        return "INDEFINIDO"
+        
+        # Handle datetime object
+        try:
+            return f"{date.day} de {months[date.month]} de {date.year}"
+        except Exception as e:
+            logger.error(f"Error formatting date {date}: {e}")
+            return "INDEFINIDO"
     
     def _number_to_words(self, number: float) -> str:
         """Convert number to Spanish words"""
