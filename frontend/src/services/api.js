@@ -128,6 +128,7 @@ export const paymentsAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
+  update: (id, data) => api.put(`/payments/${id}`, data),
   downloadFile: (fileId) => {
     const token = localStorage.getItem('token');
     return `${process.env.REACT_APP_BACKEND_URL}/api/files/view/${fileId}?token=${token}`;
