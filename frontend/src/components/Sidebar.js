@@ -25,7 +25,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { path: '/payments', label: 'Pagos', icon: DollarSign, roles: ['collaborator', 'accountant', 'superadmin'] },
     { path: '/reports', label: 'Reportes', icon: BarChart3, roles: ['accountant', 'admin', 'legal_rep', 'superadmin'] },
     { path: '/users', label: 'Usuarios', icon: Settings, roles: ['admin', 'superadmin'] },
-    { path: '/settings', label: 'Configuración', icon: Settings, roles: ['legal_rep', 'superadmin'] }
+    { path: '/settings', label: 'Configuración', icon: Settings, roles: ['legal_rep', 'superadmin'] },
+    { path: '/integration', label: 'Integración', icon: ArrowRightLeft, roles: ['admin', 'superadmin'] }
   ];
 
   const visibleItems = menuItems.filter(item => 
