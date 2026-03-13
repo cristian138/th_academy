@@ -57,6 +57,14 @@ export const PaymentsPage = () => {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   
+  // Edit payment state
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [editData, setEditData] = useState({
+    amount: '',
+    description: ''
+  });
+  
   // Form state for creating payment (cuenta de cobro)
   const [formData, setFormData] = useState({
     contract_id: '',
