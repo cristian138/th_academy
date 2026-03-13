@@ -958,7 +958,7 @@ async def verify_certificate(verification_code: str):
         "data": {
             "collaborator_name": verification.get("collaborator_name"),
             "contract_title": verification.get("contract_title"),
-            "generated_at": verification.get("generated_at").isoformat() if verification.get("generated_at") else None
+            "generated_at": verification.get("generated_at_formatted") or (verification.get("generated_at").isoformat() if verification.get("generated_at") else None)
         }
     }
 
