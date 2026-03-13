@@ -165,8 +165,10 @@ class PaymentCreate(PaymentBase):
     pass
 
 class PaymentUpdate(BaseModel):
-    status: Optional[PaymentStatus] = None
+    amount: Optional[float] = None
+    description: Optional[str] = None
     payment_date: Optional[datetime] = None
+    status: Optional[PaymentStatus] = None
     voucher_file_id: Optional[str] = None
 
 class Payment(PaymentBase):
