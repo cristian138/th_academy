@@ -894,13 +894,15 @@ async def generate_labor_certificate(
         raise HTTPException(status_code=500, detail="Error al generar el certificado")
     
     # Save verification code in database for future verification
+    import pytz
+    colombia_tz = pytz.timezone('America/Bogota')
     await db.certificate_verifications.insert_one({
         "code": verification_code,
         "contract_id": contract_id,
         "collaborator_id": contract["collaborator_id"],
         "collaborator_name": collaborator.get("name", ""),
         "contract_title": contract.get("title", ""),
-        "generated_at": datetime.now(timezone.utc),
+        "generated_at": datetime.now(colombia_tz),
         "generated_by": current_user_id,
         "is_valid": True
     })
