@@ -1558,6 +1558,69 @@ async def list_payments(
     payments = await db.payments.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return [Payment(**payment) for payment in payments]
 
+@app.get("/api/payments/{payment_id}")
+async def get_payment(
+    payment_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get a specific payment"""
+    db = await get_database()
+    
+    payment = await db.payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    # Check permissions
+    if current_user.role == UserRole.COLLABORATOR:
+        contract = await db.contracts.find_one({"id": payment["contract_id"]})
+        if not contract or contract["collaborator_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    return Payment(**payment)
+
+@app.put("/api/payments/{payment_id}")
+async def update_payment(
+    payment_id: str,
+    payment_update: PaymentUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Update a payment (only superadmin/accountant can edit before approval)"""
+    db = await get_database()
+    
+    # Get payment
+    payment = await db.payments.find_one({"id": payment_id})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    # Only allow editing if payment is pending approval
+    if payment["status"] not in [PaymentStatus.DRAFT, PaymentStatus.PENDING_APPROVAL]:
+        raise HTTPException(status_code=400, detail="Solo se pueden editar pagos pendientes de aprobación")
+    
+    # Check permissions - only superadmin and accountant can edit
+    if current_user.role not in [UserRole.SUPERADMIN, UserRole.ACCOUNTANT]:
+        raise HTTPException(status_code=403, detail="Solo el Superadministrador o Contador pueden editar pagos")
+    
+    # Prepare update data
+    update_data = payment_update.model_dump(exclude_unset=True)
+    if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc)
+        
+        await db.payments.update_one(
+            {"id": payment_id},
+            {"$set": update_data}
+        )
+    
+    await audit_service.log(
+        user_id=current_user.id,
+        action="update_payment",
+        resource_type="payment",
+        resource_id=payment_id,
+        details=update_data
+    )
+    
+    updated_payment = await db.payments.find_one({"id": payment_id}, {"_id": 0})
+    return Payment(**updated_payment)
+
 @app.post("/api/payments/{payment_id}/upload-bill")
 async def upload_bill(
     payment_id: str,
