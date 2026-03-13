@@ -1,9 +1,11 @@
 """
 Certificate Generation Service
-Generates labor certificates for contracts
+Generates labor certificates for contracts with QR verification
 """
 import io
 import os
+import uuid
+import qrcode
 from datetime import datetime
 from fpdf import FPDF
 from typing import Optional
@@ -15,52 +17,49 @@ class CertificatePDF(FPDF):
     def __init__(self, logo_path: Optional[str] = None):
         super().__init__()
         self.logo_path = logo_path
-        self.set_auto_page_break(auto=True, margin=30)
+        self.set_auto_page_break(auto=True, margin=25)
         
     def header(self):
-        # Logo centrado
-        if self.logo_path and os.path.exists(self.logo_path):
-            # Centrar logo
-            page_width = self.w
-            logo_width = 35
-            x_position = (page_width - logo_width) / 2
-            self.image(self.logo_path, x=x_position, y=8, w=logo_width)
-            self.ln(30)
-        
-        # Company name
-        self.set_font('Helvetica', 'B', 14)
-        self.set_text_color(0, 45, 84)  # #002d54
-        self.cell(0, 6, 'ACADEMIA JOTUNS CLUB SAS', 0, 1, 'C')
-        
-        self.set_font('Helvetica', '', 9)
-        self.set_text_color(100, 100, 100)
-        self.cell(0, 4, 'NIT: 901.863.346-4', 0, 1, 'C')
-        self.cell(0, 4, 'Calle 4 #4-46, Sesquile, Cundinamarca', 0, 1, 'C')
-        self.cell(0, 4, 'Telefono: 311 454 0684', 0, 1, 'C')
-        
-        # Line separator
-        self.ln(3)
-        self.set_draw_color(0, 45, 84)
-        self.set_line_width(0.5)
-        self.line(15, self.get_y(), 195, self.get_y())
-        self.ln(8)
+        # Solo mostrar header en la primera página
+        if self.page_no() == 1:
+            # Logo centrado
+            if self.logo_path and os.path.exists(self.logo_path):
+                page_width = self.w
+                logo_width = 30
+                x_position = (page_width - logo_width) / 2
+                self.image(self.logo_path, x=x_position, y=8, w=logo_width)
+                self.ln(25)
+            
+            # Company name
+            self.set_font('Helvetica', 'B', 13)
+            self.set_text_color(0, 45, 84)
+            self.cell(0, 5, 'ACADEMIA JOTUNS CLUB SAS', 0, 1, 'C')
+            
+            self.set_font('Helvetica', '', 8)
+            self.set_text_color(100, 100, 100)
+            self.cell(0, 4, 'NIT: 901.863.346-4', 0, 1, 'C')
+            self.cell(0, 4, 'Calle 4 #4-46, Sesquile, Cundinamarca', 0, 1, 'C')
+            self.cell(0, 4, 'Telefono: 311 454 0684', 0, 1, 'C')
+            
+            # Line separator
+            self.ln(2)
+            self.set_draw_color(0, 45, 84)
+            self.set_line_width(0.4)
+            self.line(15, self.get_y(), 195, self.get_y())
+            self.ln(6)
     
     def footer(self):
-        self.set_y(-20)
-        self.set_draw_color(0, 45, 84)
-        self.set_line_width(0.3)
-        self.line(15, self.get_y(), 195, self.get_y())
-        self.ln(3)
+        self.set_y(-18)
         self.set_font('Helvetica', 'I', 7)
-        self.set_text_color(128, 128, 128)
-        self.cell(0, 3, 'Este certificado se expide a solicitud del interesado.', 0, 1, 'C')
-        self.cell(0, 3, 'Academia Jotuns Club SAS - NIT 901.863.346-4', 0, 1, 'C')
+        self.set_text_color(150, 150, 150)
+        self.cell(0, 3, f'Pagina {self.page_no()}', 0, 0, 'C')
 
 
 class CertificateService:
     def __init__(self):
         self.logo_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'logo.png')
         self.signature_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'signature.png')
+        self.qr_temp_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'temp_qr.png')
         # Create assets directory if not exists
         assets_dir = os.path.join(os.path.dirname(__file__), '..', 'assets')
         os.makedirs(assets_dir, exist_ok=True)
@@ -69,19 +68,24 @@ class CertificateService:
         """Format amount as Colombian pesos"""
         return f"${amount:,.0f} COP".replace(",", ".")
     
-    def _format_date(self, date: datetime) -> str:
+    def _format_date(self, date) -> str:
         """Format date in Spanish"""
         months = {
             1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril',
             5: 'mayo', 6: 'junio', 7: 'julio', 8: 'agosto',
             9: 'septiembre', 10: 'octubre', 11: 'noviembre', 12: 'diciembre'
         }
+        if date is None:
+            return "INDEFINIDO"
         if isinstance(date, str):
-            date = datetime.fromisoformat(date.replace('Z', '+00:00'))
+            try:
+                date = datetime.fromisoformat(date.replace('Z', '+00:00'))
+            except:
+                return "INDEFINIDO"
         return f"{date.day} de {months[date.month]} de {date.year}"
     
     def _number_to_words(self, number: float) -> str:
-        """Convert number to Spanish words (simplified)"""
+        """Convert number to Spanish words"""
         units = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE']
         tens = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA']
         teens = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISEIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE']
@@ -95,7 +99,6 @@ class CertificateService:
         
         result = []
         
-        # Millions
         if n >= 1000000:
             millions = n // 1000000
             if millions == 1:
@@ -104,7 +107,6 @@ class CertificateService:
                 result.append(f'{self._number_to_words(millions)} MILLONES')
             n = n % 1000000
         
-        # Thousands
         if n >= 1000:
             thousands = n // 1000
             if thousands == 1:
@@ -113,12 +115,10 @@ class CertificateService:
                 result.append(f'{self._number_to_words(thousands)} MIL')
             n = n % 1000
         
-        # Hundreds
         if n >= 100:
             result.append(hundreds[n // 100])
             n = n % 100
         
-        # Tens and units
         if n >= 20:
             if n % 10 == 0:
                 result.append(tens[n // 10])
@@ -131,6 +131,21 @@ class CertificateService:
         
         return ' '.join(result)
     
+    def _generate_qr_code(self, verification_code: str, verification_url: str) -> str:
+        """Generate QR code image and return path"""
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=2,
+        )
+        qr.add_data(verification_url)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        img.save(self.qr_temp_path)
+        return self.qr_temp_path
+    
     def generate_labor_certificate(
         self,
         collaborator_name: str,
@@ -138,155 +153,184 @@ class CertificateService:
         contract_title: str,
         contract_description: str,
         contract_type: str,
-        start_date: datetime,
-        end_date: Optional[datetime],
+        start_date,
+        end_date,
         monthly_payment: Optional[float],
         payment_per_session: Optional[float],
-        legal_rep_name: str = "Representante Legal"
+        legal_rep_name: str = "Representante Legal",
+        verification_code: str = None,
+        verification_url: str = None
     ) -> bytes:
-        """Generate a labor certificate PDF"""
+        """Generate a labor certificate PDF with QR verification"""
+        
+        # Generate verification code if not provided
+        if not verification_code:
+            verification_code = str(uuid.uuid4())[:12].upper()
+        
+        if not verification_url:
+            verification_url = f"https://th.academiajotuns.com/verificar/{verification_code}"
         
         pdf = CertificatePDF(self.logo_path if os.path.exists(self.logo_path) else None)
         pdf.add_page()
         
         # Title
-        pdf.set_font('Helvetica', 'B', 16)
+        pdf.set_font('Helvetica', 'B', 14)
         pdf.set_text_color(0, 45, 84)
-        pdf.cell(0, 10, 'CERTIFICADO LABORAL', 0, 1, 'C')
-        pdf.ln(2)
+        pdf.cell(0, 8, 'CERTIFICADO LABORAL', 0, 1, 'C')
         
-        # Subtitle - Contract type
-        pdf.set_font('Helvetica', 'B', 11)
-        pdf.set_text_color(0, 45, 84)
-        pdf.cell(0, 6, 'CONTRATO POR PRESTACION DE SERVICIOS', 0, 1, 'C')
-        pdf.ln(6)
-        
-        # Certificate body
-        pdf.set_font('Helvetica', '', 10)
-        pdf.set_text_color(0, 0, 0)
+        # Subtitle
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.cell(0, 5, 'CONTRATO POR PRESTACION DE SERVICIOS', 0, 1, 'C')
+        pdf.ln(5)
         
         # Introduction
-        pdf.multi_cell(0, 5, 
+        pdf.set_font('Helvetica', '', 9)
+        pdf.set_text_color(0, 0, 0)
+        pdf.multi_cell(0, 4, 
             'El suscrito Representante Legal de ACADEMIA JOTUNS CLUB SAS, ' +
             'sociedad legalmente constituida, identificada con NIT 901.863.346-4, certifica que:'
         )
-        pdf.ln(5)
+        pdf.ln(4)
         
         # Collaborator info
-        pdf.set_font('Helvetica', 'B', 11)
-        pdf.cell(0, 6, f'{collaborator_name.upper()}', 0, 1, 'C')
-        pdf.set_font('Helvetica', '', 10)
-        pdf.cell(0, 5, f'Identificado(a) con documento No. {collaborator_id}', 0, 1, 'C')
-        pdf.ln(5)
-        
-        # Contract details
-        pdf.set_font('Helvetica', '', 10)
-        
-        # Determine status text
-        if end_date:
-            status_text = "presto"
-        else:
-            status_text = "presta"
-        
-        pdf.multi_cell(0, 5,
-            f'{status_text.upper()} sus servicios a nuestra organizacion mediante CONTRATO DE PRESTACION DE SERVICIOS.'
-        )
-        pdf.ln(4)
-        
-        # Fechas del contrato
         pdf.set_font('Helvetica', 'B', 10)
-        pdf.cell(0, 6, 'VIGENCIA DEL CONTRATO:', 0, 1, 'L')
-        pdf.set_font('Helvetica', '', 10)
-        pdf.cell(55, 5, 'Fecha de inicio:', 0, 0, 'L')
-        pdf.set_font('Helvetica', 'B', 10)
-        pdf.cell(0, 5, self._format_date(start_date).upper(), 0, 1, 'L')
-        pdf.set_font('Helvetica', '', 10)
-        pdf.cell(55, 5, 'Fecha de finalizacion:', 0, 0, 'L')
-        pdf.set_font('Helvetica', 'B', 10)
-        if end_date:
-            pdf.cell(0, 5, self._format_date(end_date).upper(), 0, 1, 'L')
-        else:
-            pdf.cell(0, 5, 'INDEFINIDO', 0, 1, 'L')
-        pdf.ln(4)
-        
-        # OBJETO del contrato
-        pdf.set_font('Helvetica', 'B', 10)
-        pdf.cell(0, 6, 'OBJETO:', 0, 1, 'L')
+        pdf.cell(0, 5, f'{collaborator_name.upper()}', 0, 1, 'C')
         pdf.set_font('Helvetica', '', 9)
+        pdf.cell(0, 4, f'Identificado(a) con documento No. {collaborator_id}', 0, 1, 'C')
+        pdf.ln(4)
+        
+        # Contract statement
+        pdf.set_font('Helvetica', '', 9)
+        pdf.multi_cell(0, 4,
+            'PRESTA sus servicios a nuestra organizacion mediante CONTRATO DE PRESTACION DE SERVICIOS.'
+        )
+        pdf.ln(3)
+        
+        # Vigencia del contrato
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.cell(0, 5, 'VIGENCIA DEL CONTRATO:', 0, 1, 'L')
+        pdf.set_font('Helvetica', '', 9)
+        
+        # Fecha de inicio
+        pdf.cell(50, 4, 'Fecha de inicio:', 0, 0, 'L')
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.cell(0, 4, self._format_date(start_date).upper(), 0, 1, 'L')
+        
+        # Fecha de finalización
+        pdf.set_font('Helvetica', '', 9)
+        pdf.cell(50, 4, 'Fecha de finalizacion:', 0, 0, 'L')
+        pdf.set_font('Helvetica', 'B', 9)
+        end_date_text = self._format_date(end_date).upper() if end_date else "INDEFINIDO"
+        pdf.cell(0, 4, end_date_text, 0, 1, 'L')
+        pdf.ln(3)
+        
+        # OBJETO
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.cell(0, 5, 'OBJETO:', 0, 1, 'L')
+        pdf.set_font('Helvetica', '', 8)
         objeto_text = contract_description if contract_description else contract_title
         pdf.multi_cell(0, 4, objeto_text)
-        pdf.ln(4)
+        pdf.ln(3)
         
-        # Payment information
-        pdf.set_font('Helvetica', 'B', 10)
-        pdf.cell(0, 6, 'HONORARIOS:', 0, 1, 'L')
-        pdf.set_font('Helvetica', '', 10)
+        # HONORARIOS
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.cell(0, 5, 'HONORARIOS:', 0, 1, 'L')
+        pdf.set_font('Helvetica', '', 9)
         
         if payment_per_session and payment_per_session > 0:
             amount_words = self._number_to_words(payment_per_session)
-            pdf.multi_cell(0, 5,
+            pdf.multi_cell(0, 4,
                 f'El contratista recibe honorarios por valor de {self._format_currency(payment_per_session)} ' +
                 f'({amount_words} PESOS M/CTE) por cada sesion o servicio prestado.'
             )
         elif monthly_payment and monthly_payment > 0:
             amount_words = self._number_to_words(monthly_payment)
-            pdf.multi_cell(0, 5,
+            pdf.multi_cell(0, 4,
                 f'El contratista recibe honorarios mensuales por valor de {self._format_currency(monthly_payment)} ' +
                 f'({amount_words} PESOS M/CTE).'
             )
+        pdf.ln(3)
         
-        pdf.ln(4)
-        
-        # Legal note
-        pdf.set_font('Helvetica', 'I', 8)
-        pdf.set_text_color(80, 80, 80)
-        pdf.multi_cell(0, 4,
+        # NOTA
+        pdf.set_font('Helvetica', 'I', 7)
+        pdf.set_text_color(100, 100, 100)
+        pdf.multi_cell(0, 3,
             'NOTA: El presente contrato es de naturaleza civil y no genera relacion laboral. ' +
             'El contratista es responsable del pago de sus propias obligaciones de seguridad social ' +
             '(salud, pension y ARL) conforme a la normatividad vigente.'
         )
-        pdf.ln(5)
+        pdf.ln(4)
         
-        # Issue statement
-        pdf.set_font('Helvetica', '', 10)
+        # Expedición
+        pdf.set_font('Helvetica', '', 9)
         pdf.set_text_color(0, 0, 0)
         today = datetime.now()
-        pdf.multi_cell(0, 5,
+        pdf.multi_cell(0, 4,
             f'Se expide el presente certificado a solicitud del interesado, en el municipio de Sesquile, Cundinamarca, ' +
             f'a los {today.day} dias del mes de {self._format_date(today).split(" de ")[1].split(" de ")[0]} de {today.year}.'
         )
+        pdf.ln(8)
         
-        # Check if we need a new page for signature
-        if pdf.get_y() > 220:
+        # Signature section - asegurar que haya espacio suficiente
+        space_needed = 60  # espacio necesario para firma + QR
+        if pdf.get_y() > (297 - 25 - space_needed):  # A4 height - margin - space
             pdf.add_page()
-            pdf.ln(20)
-        else:
-            pdf.ln(15)
+            pdf.ln(10)
         
-        # Signature section
+        # Firma
         if os.path.exists(self.signature_path):
-            # Center the signature image
             page_width = pdf.w
-            img_width = 45
+            img_width = 40
             x_position = (page_width - img_width) / 2
             pdf.image(self.signature_path, x=x_position, y=pdf.get_y(), w=img_width)
-            pdf.ln(22)
+            pdf.ln(18)
         else:
-            pdf.ln(8)
-            pdf.set_font('Helvetica', 'B', 10)
-            pdf.cell(0, 5, '____________________________________', 0, 1, 'C')
+            pdf.cell(0, 4, '____________________________________', 0, 1, 'C')
             pdf.ln(2)
         
-        # Signature text
-        pdf.set_font('Helvetica', 'B', 10)
-        pdf.cell(0, 5, legal_rep_name.upper(), 0, 1, 'C')
-        pdf.set_font('Helvetica', '', 9)
-        pdf.cell(0, 4, 'Representante Legal', 0, 1, 'C')
-        pdf.cell(0, 4, 'ACADEMIA JOTUNS CLUB SAS', 0, 1, 'C')
-        pdf.cell(0, 4, 'NIT 901.863.346-4', 0, 1, 'C')
+        # Texto de firma
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.cell(0, 4, legal_rep_name.upper(), 0, 1, 'C')
+        pdf.set_font('Helvetica', '', 8)
+        pdf.cell(0, 3, 'Representante Legal', 0, 1, 'C')
+        pdf.cell(0, 3, 'ACADEMIA JOTUNS CLUB SAS', 0, 1, 'C')
+        pdf.cell(0, 3, 'NIT 901.863.346-4', 0, 1, 'C')
+        pdf.ln(6)
         
-        # Return PDF as bytes
-        return bytes(pdf.output())
+        # QR Code section
+        pdf.set_draw_color(200, 200, 200)
+        pdf.set_line_width(0.2)
+        pdf.line(15, pdf.get_y(), 195, pdf.get_y())
+        pdf.ln(4)
+        
+        # Generate QR
+        qr_path = self._generate_qr_code(verification_code, verification_url)
+        
+        # QR y texto de verificación lado a lado
+        y_before_qr = pdf.get_y()
+        pdf.image(qr_path, x=15, y=y_before_qr, w=25)
+        
+        pdf.set_xy(45, y_before_qr)
+        pdf.set_font('Helvetica', 'B', 8)
+        pdf.cell(0, 4, 'VERIFICACION DEL DOCUMENTO', 0, 1, 'L')
+        pdf.set_x(45)
+        pdf.set_font('Helvetica', '', 7)
+        pdf.cell(0, 3, f'Codigo de verificacion: {verification_code}', 0, 1, 'L')
+        pdf.set_x(45)
+        pdf.cell(0, 3, 'Escanee el codigo QR o visite:', 0, 1, 'L')
+        pdf.set_x(45)
+        pdf.set_font('Helvetica', 'I', 7)
+        pdf.set_text_color(0, 45, 84)
+        pdf.cell(0, 3, verification_url, 0, 1, 'L')
+        
+        # Cleanup temp QR file
+        try:
+            if os.path.exists(qr_path):
+                os.remove(qr_path)
+        except:
+            pass
+        
+        return bytes(pdf.output()), verification_code
 
 
 certificate_service = CertificateService()
