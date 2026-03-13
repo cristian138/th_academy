@@ -8,7 +8,8 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  X
+  X,
+  ArrowRightLeft
 } from 'lucide-react';
 
 export const Sidebar = ({ isOpen, onClose }) => {
