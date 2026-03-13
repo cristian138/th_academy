@@ -597,6 +597,61 @@ export const PaymentsPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Payment Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-brand-navy">Editar Cuenta de Cobro</DialogTitle>
+            <DialogDescription>
+              Modifique los datos de la cuenta de cobro
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-amount">Monto ($)</Label>
+              <Input
+                id="edit-amount"
+                type="number"
+                value={editData.amount}
+                onChange={(e) => setEditData({...editData, amount: e.target.value})}
+                className="rounded-sm"
+                data-testid="edit-payment-amount"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Descripción</Label>
+              <Textarea
+                id="edit-description"
+                value={editData.description}
+                onChange={(e) => setEditData({...editData, description: e.target.value})}
+                className="rounded-sm"
+                rows={3}
+                data-testid="edit-payment-description"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditDialog(false);
+                setEditingPayment(null);
+              }}
+              className="flex-1 rounded-sm"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleUpdatePayment}
+              data-testid="save-payment-button"
+              className="flex-1 bg-brand-navy hover:bg-brand-navy/90 text-white rounded-sm"
+            >
+              Guardar Cambios
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
