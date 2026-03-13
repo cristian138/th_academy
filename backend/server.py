@@ -896,13 +896,16 @@ async def generate_labor_certificate(
     # Save verification code in database for future verification
     import pytz
     colombia_tz = pytz.timezone('America/Bogota')
+    now_colombia = datetime.now(colombia_tz)
+    
     await db.certificate_verifications.insert_one({
         "code": verification_code,
         "contract_id": contract_id,
         "collaborator_id": contract["collaborator_id"],
         "collaborator_name": collaborator.get("name", ""),
         "contract_title": contract.get("title", ""),
-        "generated_at": datetime.now(colombia_tz),
+        "generated_at": now_colombia,
+        "generated_at_formatted": now_colombia.strftime("%d de %B de %Y, %I:%M %p").replace("AM", "a.m.").replace("PM", "p.m."),
         "generated_by": current_user_id,
         "is_valid": True
     })
