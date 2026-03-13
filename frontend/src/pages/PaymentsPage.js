@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { DollarSign, Upload, CheckCircle2, Clock, Plus, FileText, AlertCircle } from 'lucide-react';
+import { DollarSign, Upload, CheckCircle2, Clock, Plus, FileText, AlertCircle, Pencil } from 'lucide-react';
 
 const getStatusBadge = (status) => {
   const statusMap = {
