@@ -293,7 +293,7 @@ class CertificateService:
         # Expedición
         pdf.set_font('Helvetica', '', 9)
         pdf.set_text_color(0, 0, 0)
-        today = datetime.now()
+        today = datetime.now(COLOMBIA_TZ)
         pdf.multi_cell(0, 4,
             f'Se expide el presente certificado a solicitud del interesado, en el municipio de Sesquile, Cundinamarca, ' +
             f'a los {today.day} dias del mes de {self._format_date(today).split(" de ")[1].split(" de ")[0]} de {today.year}.'
